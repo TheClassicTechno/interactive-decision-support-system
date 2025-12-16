@@ -337,7 +337,7 @@ export default function Home() {
     const isFirstUserMessage = chatMessages.filter(m => m.role === 'user').length === 0;
     const requestBody: { message: string; session_id?: string; latitude?: number; longitude?: number } = {
       message,
-      session_id: sessionId,
+      ...(sessionId && { session_id: sessionId }),
     };
     
     // Include location with first user message after location is granted
