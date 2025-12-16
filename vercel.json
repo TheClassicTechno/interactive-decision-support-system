@@ -12,7 +12,14 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 300,
-      "memory": 3008
+      "memory": 3008,
+      "includeFiles": [
+        "../api/**",
+        "../idss_agent/**",
+        "../config/**",
+        "../data/**",
+        "../requirements.txt"
+      ]
     }
   },
   "env": {
