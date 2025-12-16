@@ -60,4 +60,11 @@ if [ -f "$PROJECT_ROOT/requirements.txt" ] && [ -d "$SCRIPT_DIR/api" ]; then
   echo "Copied requirements.txt to web/api/"
 fi
 
+# Copy pyproject.toml if it exists (Vercel now uses this)
+if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
+  echo "pyproject.toml already exists in web/"
+else
+  echo "WARNING: pyproject.toml not found in web/ directory"
+fi
+
 echo "Dependencies copy completed"
