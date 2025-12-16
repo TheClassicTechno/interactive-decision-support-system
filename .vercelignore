@@ -3,6 +3,7 @@
 # Development files
 start_dev.sh
 *.sh
+!web/copy-deps.sh
 
 # Test files
 tests/
