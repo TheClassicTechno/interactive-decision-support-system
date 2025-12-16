@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Product } from '@/types/vehicle';
 
 interface RecommendationCarouselProps {
-  vehicles: Vehicle[];
-  onItemSelect?: (vehicle: Vehicle) => void;
+  vehicles: Product[];
+  onItemSelect?: (vehicle: Product) => void;
   showPlaceholders?: boolean;
-  onToggleFavorite?: (vehicle: Vehicle) => void;
+  onToggleFavorite?: (vehicle: Product) => void;
   isFavorite?: (vehicleId: string) => boolean;
   currentIndex?: number;
   onIndexChange?: (index: number) => void;
