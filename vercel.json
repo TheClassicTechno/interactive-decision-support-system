@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm install && npm run build",
+  "buildCommand": "cd .. && cp -r api idss_agent config data requirements.txt web/ 2>/dev/null || true && cd web && npm install && npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "rewrites": [
@@ -12,17 +12,10 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 300,
-      "memory": 3008,
-      "includeFiles": [
-        "../api/**",
-        "../idss_agent/**",
-        "../config/**",
-        "../data/**",
-        "../requirements.txt"
-      ]
+      "memory": 3008
     }
   },
   "env": {
-    "PYTHONPATH": "/var/task/.."
+    "PYTHONPATH": "/var/task"
   }
 }

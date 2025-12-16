@@ -19,30 +19,28 @@ import os
 # But Vercel might place them differently. Let's try multiple strategies.
 
 current_file = os.path.abspath(__file__)
-# Strategy 1: Go up from web/api/index.py -> web/api -> web -> project_root
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+# In Vercel with root='web/', files are copied into web/ during build
+# So the structure in /var/task is:
+# /var/task/ (web/ directory)
+#   - api/ (copied from ../api/)
+#   - idss_agent/ (copied from ../idss_agent/)
+#   - config/ (copied from ../config/)
+#   - data/ (copied from ../data/)
+#   - requirements.txt (copied from ../requirements.txt)
+#   - api/index.py (this file, in web/api/)
 
-# Strategy 2: Check if api/ exists at /var/task (if files were copied there)
+# Since files are copied into web/, /var/task is the project root
+project_root = "/var/task"
+
+# Verify api/server.py exists (if not, try alternative paths)
 if not os.path.exists(os.path.join(project_root, "api", "server.py")):
-    # Try /var/task (Vercel's function directory - might have included files)
-    if os.path.exists("/var/task/api/server.py"):
-        project_root = "/var/task"
-    # Try parent of /var/task (if files are at project root level)
-    elif os.path.exists("/var/task/../api/server.py"):
-        project_root = os.path.dirname("/var/task")
-    # Try current directory structure (files might be alongside web/)
-    elif os.path.exists(os.path.join(os.path.dirname(project_root), "api", "server.py")):
-        project_root = os.path.dirname(project_root)
+    # Fallback: try going up from current file location
+    possible_root = os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+    if os.path.exists(os.path.join(possible_root, "api", "server.py")):
+        project_root = possible_root
     else:
-        # Last resort: try to find api/server.py by searching
-        import pathlib
-        possible_roots = [
-            "/var/task",
-            os.path.dirname("/var/task"),
-            project_root,
-            os.path.dirname(project_root),
-        ]
-        for root in possible_roots:
+        # Last resort: search for it
+        for root in ["/var/task", os.path.dirname("/var/task"), possible_root]:
             if os.path.exists(os.path.join(root, "api", "server.py")):
                 project_root = root
                 break
