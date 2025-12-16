@@ -136,26 +136,6 @@ except ImportError as e:
     
     raise
 
-# Wrap handler with error handling to catch and log all errors
-def error_handler(event, context):
-    """Wrapper to catch and log all errors from the handler."""
-    try:
-        return handler(event, context)
-    except Exception as e:
-        import traceback
-        error_msg = f"Handler error: {str(e)}\n{traceback.format_exc()}"
-        logger.error(error_msg)
-        # Return a proper error response
-        return {
-            'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({
-                'error': 'Internal Server Error',
-                'message': str(e),
-                'type': type(e).__name__
-            })
-        }
-
 # Create ASGI handler for Vercel
 try:
     handler = Mangum(app, lifespan="off")
