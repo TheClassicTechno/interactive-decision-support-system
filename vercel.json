@@ -1,16 +1,16 @@
 {
   "version": 2,
-  "buildCommand": "cd web && npm install && npm run build",
-  "outputDirectory": "web/.next",
-  "installCommand": "cd web && npm install",
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
   "rewrites": [
     {
       "source": "/backend-api/(.*)",
-      "destination": "/api/backend/index.py"
+      "destination": "/../api/backend/index.py"
     }
   ],
   "functions": {
-    "api/backend/index.py": {
+    "../api/backend/index.py": {
       "maxDuration": 300,
       "memory": 3008
     }
