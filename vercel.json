@@ -12,7 +12,7 @@
   ],
   "functions": {
     "api/backend/index.py": {
-      "runtime": "python3.9",
+      "runtime": "@vercel/python",
       "maxDuration": 300,
       "memory": 3008
     }
