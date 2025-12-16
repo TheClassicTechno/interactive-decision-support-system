@@ -266,10 +266,10 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
 // VehicleCard component
 function VehicleCard({ vehicle, onItemSelect, index, onToggleFavorite, isFavorite }: { 
   vehicle: Product; 
-  onItemSelect?: (vehicle: Vehicle) => void;
+  onItemSelect?: (vehicle: Product) => void;
   index?: number;
   isCenter?: boolean;
-  onToggleFavorite?: (vehicle: Vehicle) => void;
+  onToggleFavorite?: (vehicle: Product) => void;
   isFavorite?: (vehicleId: string) => boolean;
 }) {
   const primaryImage = vehicle.image_url;
