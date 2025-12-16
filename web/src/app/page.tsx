@@ -364,6 +364,10 @@ export default function Home() {
       // Handle streaming response
       const data = await handleStreamingResponse(response);
       
+      if (!data) {
+        throw new Error('No data received from streaming response');
+      }
+      
       // Log API response to console (visible in Chrome DevTools Network/Console tab)
       console.log('%c[API Response]', 'color: #2196F3; font-weight: bold; font-size: 14px', {
         session_id: data.session_id,
