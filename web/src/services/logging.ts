@@ -1,6 +1,6 @@
 interface LogEventRequest {
   event_type: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   timestamp?: string;
 }
 
@@ -18,7 +18,7 @@ export class LoggingService {
   /**
    * Log a user interaction event
    */
-  static async logEvent(sessionId: string, eventType: string, data: Record<string, any> = {}): Promise<LogEventResponse> {
+  static async logEvent(sessionId: string, eventType: string, data: Record<string, unknown> = {}): Promise<LogEventResponse> {
     const request: LogEventRequest = {
       event_type: eventType,
       data,
@@ -124,7 +124,7 @@ export class LoggingService {
   /**
    * Log custom events
    */
-  static async logCustomEvent(sessionId: string, eventType: string, data: Record<string, any> = {}): Promise<void> {
+  static async logCustomEvent(sessionId: string, eventType: string, data: Record<string, unknown> = {}): Promise<void> {
     try {
       await this.logEvent(sessionId, eventType, data);
     } catch (error) {

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     
     // Extract image URLs from the response, filtering out SVGs
     const allImages = data.retail || [];
-    const validImages = allImages.filter((img: any) => {
+    const validImages = allImages.filter((img: string) => {
       // Filter out SVG images and ensure we have valid image URLs
       return img && 
              typeof img === 'string' && 

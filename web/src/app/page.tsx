@@ -265,7 +265,7 @@ export default function Home() {
     let buffer = '';
     let currentEventType = '';
     let hasCompleted = false;
-    let finalData: any = null;
+    let finalData: ChatResponse | null = null;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -335,7 +335,7 @@ export default function Home() {
 
     // Prepare request body with location if available and this is the first user message
     const isFirstUserMessage = chatMessages.filter(m => m.role === 'user').length === 0;
-    const requestBody: any = {
+    const requestBody: { message: string; session_id?: string; latitude?: number; longitude?: number } = {
       message,
       session_id: sessionId,
     };
