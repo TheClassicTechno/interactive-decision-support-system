@@ -1,0 +1,58 @@
+# Ignore files that shouldn't be deployed to Vercel
+
+# Development files
+start_dev.sh
+*.sh
+
+# Test files
+tests/
+*.test.py
+*.spec.py
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Notebooks
+notebooks/
+*.ipynb
+
+# Results and plots
+results/
+review_simulation/
+
+# User simulation
+user_sim_car/
+web_simulation/
+
+# Scripts (not needed in production)
+scripts/
+
+# Dataset builder
+dataset_builder/
+
+# Logs
+*.log
+logs/
+sessions/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

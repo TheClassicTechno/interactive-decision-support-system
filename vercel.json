@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "buildCommand": "cd web && npm install && npm run build",
+  "outputDirectory": "web/.next",
+  "installCommand": "cd web && npm install",
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/backend-api/(.*)",
+      "destination": "/api/backend/index.py"
+    }
+  ],
+  "functions": {
+    "api/backend/index.py": {
+      "runtime": "python3.9",
+      "maxDuration": 300,
+      "memory": 3008
+    }
+  },
+  "env": {
+    "PYTHONPATH": "/var/task"
+  }
+}

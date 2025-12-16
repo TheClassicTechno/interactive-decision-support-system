@@ -1,14 +1,16 @@
 import { ChatRequest, ChatResponse } from '@/types/chat';
 import { Product } from '@/types/vehicle';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Use Next.js API routes as proxy (they handle backend routing)
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 class IDSSApiService {
   private sessionId: string | null = null;
 
   async sendMessage(message: string): Promise<ChatResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/chat`, {
+      const url = API_BASE_URL ? `${API_BASE_URL}/chat` : '/api/chat';
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,7 +46,8 @@ class IDSSApiService {
         throw new Error('No session ID available');
       }
 
-      const response = await fetch(`${API_BASE_URL}/session/${id}`);
+      const url = API_BASE_URL ? `${API_BASE_URL}/session/${id}` : `/api/session/${id}`;
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -59,7 +62,8 @@ class IDSSApiService {
 
   async resetSession(): Promise<string> {
     try {
-      const response = await fetch(`${API_BASE_URL}/session/reset`, {
+      const url = API_BASE_URL ? `${API_BASE_URL}/session/reset` : '/api/session/reset';
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,10 +119,11 @@ class IDSSApiService {
         features: product.features
       };
 
-      console.log('Sending to:', `${API_BASE_URL}/session/${sessionId}/favorite`);
+      const url = API_BASE_URL ? `${API_BASE_URL}/session/${sessionId}/favorite` : `/api/session/${sessionId}/favorite`;
+      console.log('Sending to:', url);
       console.log('Request body:', { vehicle: productData, is_favorited: isFavorited });
 
-      const response = await fetch(`${API_BASE_URL}/session/${sessionId}/favorite`, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,24 @@
 import { NextRequest } from 'next/server';
 
-const IDSS_API_URL = process.env.IDSS_API_URL || 'http://localhost:8000';
+// Determine backend API URL
+// On Vercel, use the serverless function route
+// Locally, use the FastAPI server or env var
+function getBackendUrl(): string {
+  // Check for explicit env var first
+  if (process.env.IDSS_API_URL) {
+    return process.env.IDSS_API_URL;
+  }
+  
+  // On Vercel, use the serverless function route
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}/backend-api`;
+  }
+  
+  // Local development - use FastAPI server
+  return 'http://localhost:8000';
+}
+
+const IDSS_API_URL = getBackendUrl();
 
 export async function POST(request: NextRequest) {
   try {
