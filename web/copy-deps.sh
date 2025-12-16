@@ -48,17 +48,9 @@ else
   echo "WARNING: data/ directory not found at $PROJECT_ROOT/data"
 fi
 
-# Copy requirements.txt to web/ root
-if [ -f "$PROJECT_ROOT/requirements.txt" ]; then
-  cp "$PROJECT_ROOT/requirements.txt" "$SCRIPT_DIR/" 2>/dev/null || true
-  echo "Copied requirements.txt to web/"
-fi
-
-# Also copy requirements.txt to api/ directory (Vercel might look for it there)
-if [ -f "$PROJECT_ROOT/requirements.txt" ] && [ -d "$SCRIPT_DIR/api" ]; then
-  cp "$PROJECT_ROOT/requirements.txt" "$SCRIPT_DIR/api/" 2>/dev/null || true
-  echo "Copied requirements.txt to web/api/"
-fi
+# Note: We're using pyproject.toml instead of requirements.txt for Vercel
+# Vercel now prioritizes pyproject.toml over requirements.txt
+# requirements.txt is kept in api/ for backwards compatibility but not used by Vercel
 
 # Copy pyproject.toml if it exists (Vercel now uses this)
 if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
