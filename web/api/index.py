@@ -5,6 +5,7 @@ This wraps the FastAPI app using Mangum to make it compatible with Vercel's serv
 """
 import sys
 import os
+import json
 
 # In Vercel with root directory set to 'web/', the structure is:
 # /var/task/ (web/ directory contents)
@@ -135,5 +136,35 @@ except ImportError as e:
     
     raise
 
+# Wrap handler with error handling to catch and log all errors
+def error_handler(event, context):
+    """Wrapper to catch and log all errors from the handler."""
+    try:
+        return handler(event, context)
+    except Exception as e:
+        import traceback
+        error_msg = f"Handler error: {str(e)}\n{traceback.format_exc()}"
+        logger.error(error_msg)
+        # Return a proper error response
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({
+                'error': 'Internal Server Error',
+                'message': str(e),
+                'type': type(e).__name__
+            })
+        }
+
 # Create ASGI handler for Vercel
-handler = Mangum(app, lifespan="off")
+try:
+    handler = Mangum(app, lifespan="off")
+    logger.info("Successfully created Mangum handler")
+except Exception as e:
+    logger.error(f"Failed to create Mangum handler: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+    raise
+
+# Export handler for Vercel
+__all__ = ["handler"]
