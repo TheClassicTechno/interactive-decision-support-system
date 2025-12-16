@@ -92,11 +92,18 @@ api_server_path = os.path.join(project_root, "api", "server.py")
 logger.info(f"Looking for api/server.py at: {api_server_path}")
 logger.info(f"api/server.py exists: {os.path.exists(api_server_path)}")
 
+# Try importing with detailed error reporting
 try:
     logger.info("Attempting to import mangum...")
     from mangum import Mangum
     logger.info("Successfully imported mangum")
-    
+except ImportError as e:
+    logger.error(f"Failed to import mangum: {e}")
+    logger.error("This usually means Python dependencies are not installed.")
+    logger.error("Check that requirements.txt is in the web/ directory and Vercel is installing it.")
+    raise
+
+try:
     logger.info("Attempting to import api.server...")
     from api.server import app
     logger.info("Successfully imported api.server")
