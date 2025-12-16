@@ -113,12 +113,15 @@ function ItemCard({ vehicle, onItemSelect }: ItemCardProps) {
               <span className="truncate">{vehicle.source || 'Retailer site'}</span>
             </div>
           )}
-          {vehicle.offer?.availability && (
-            <div className="flex items-center">
-              <span className="mr-1">📦</span>
-              {String(vehicle.offer.availability)}
-            </div>
-          )}
+          {(() => {
+            const availability = vehicle.offer?.availability;
+            return availability && (
+              <div className="flex items-center">
+                <span className="mr-1">📦</span>
+                <span>{String(availability)}</span>
+              </div>
+            );
+          })()}
         </div>
         
         <div className="mt-4 pt-3 border-t border-stone-200">

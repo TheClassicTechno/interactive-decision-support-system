@@ -11,7 +11,7 @@ interface FavoritesPageProps {
 }
 
 export default function FavoritesPage({ favorites, onToggleFavorite, isFavorite, onItemSelect, onClose }: FavoritesPageProps) {
-  const primaryImage = (vehicle: Product) => vehicle.image_url;
+  const primaryImage = (vehicle: Product) => vehicle.image_url || undefined;
   const hasValidImage = (vehicle: Product) => {
     const img = primaryImage(vehicle);
     return img && !img.toLowerCase().includes('.svg');
