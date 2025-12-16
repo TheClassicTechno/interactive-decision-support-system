@@ -36,12 +36,17 @@ from api.models import (
     FavoriteRequest
 )
 
+# Setup logging early so we can use it for warnings
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 required_env_vars = ["OPENAI_API_KEY"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
-    print(f" ERROR: Missing required environment variables: {', '.join(missing_vars)}")
-    print("  Please set them in your .env file or environment")
-    exit(1)
+    logger.warning(f"Missing required environment variables: {', '.join(missing_vars)}")
+    logger.warning("  Please set them in your .env file or environment")
+    # Don't exit in serverless environment - let it fail gracefully on first request
+    # exit(1)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -58,10 +63,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 sessions: Dict[str, ProductSearchState] = {}
 

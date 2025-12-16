@@ -16,6 +16,6 @@
     }
   },
   "env": {
-    "PYTHONPATH": "/var/task"
+    "PYTHONPATH": "/var/task/.."
   }
 }

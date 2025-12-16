@@ -21,7 +21,20 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
 
 
-DEFAULT_DB_PATH = _project_root() / "data" / "pc_parts.db"
+def _get_db_path() -> Path:
+    """Get database path from environment variable or default location."""
+    import os
+    env_path = os.getenv("PC_PARTS_DB")
+    if env_path:
+        # If absolute path, use as-is; otherwise resolve relative to project root
+        path = Path(env_path)
+        if path.is_absolute():
+            return path
+        return _project_root() / path
+    return _project_root() / "data" / "pc_parts.db"
+
+
+DEFAULT_DB_PATH = _get_db_path()
 
 
 class ElectronicsStoreError(RuntimeError):
@@ -56,7 +69,7 @@ class LocalElectronicsStore:
     """
     
     def __init__(self, db_path: Optional[Path] = None):
-        path = Path(db_path) if db_path else DEFAULT_DB_PATH
+        path = Path(db_path) if db_path else _get_db_path()
         if not path.exists():
             raise FileNotFoundError(
                 f"Local electronics database not found at {path}. "
