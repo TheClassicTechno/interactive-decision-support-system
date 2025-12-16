@@ -115,7 +115,8 @@ function ItemCard({ vehicle, onItemSelect }: ItemCardProps) {
           )}
           {(() => {
             const availability = vehicle.offer?.availability;
-            return availability && (
+            if (!availability) return null;
+            return (
               <div className="flex items-center">
                 <span className="mr-1">📦</span>
                 <span>{String(availability)}</span>
