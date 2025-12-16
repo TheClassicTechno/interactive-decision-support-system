@@ -9,7 +9,7 @@ import FavoritesPage from '@/components/FavoritesPage';
 import ComparisonTable from '@/components/ComparisonTable';
 import CompatibilityResult from '@/components/CompatibilityResult';
 import { Product } from '@/types/vehicle';
-import { ChatMessage } from '@/types/chat';
+import { ChatMessage, ChatResponse } from '@/types/chat';
 import { idssApiService } from '@/services/api';
 import { LoggingService } from '@/services/logging';
 import { useVerboseLoading } from '@/hooks/useVerboseLoading';
