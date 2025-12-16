@@ -3,10 +3,10 @@
 import { Product } from '@/types/vehicle';
 
 interface FavoritesPageProps {
-  favorites: Vehicle[];
-  onToggleFavorite: (vehicle: Vehicle) => void;
+  favorites: Product[];
+  onToggleFavorite: (vehicle: Product) => void;
   isFavorite: (vehicleId: string) => boolean;
-  onItemSelect: (vehicle: Vehicle) => void;
+  onItemSelect: (vehicle: Product) => void;
   onClose: () => void;
 }
 
