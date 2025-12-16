@@ -1,11 +1,11 @@
 'use client';
 
-import { Vehicle } from '@/types/vehicle';
+import { Product } from '@/types/vehicle';
 import { useVehicleImages } from '@/hooks/useVehicleImages';
 
 interface CarGridProps {
-  vehicles: Vehicle[];
-  onCarSelect: (car: Vehicle) => void;
+  vehicles: Product[];
+  onCarSelect: (car: Product) => void;
 }
 
 export default function CarGrid({ vehicles, onCarSelect }: CarGridProps) {
@@ -52,8 +52,8 @@ export default function CarGrid({ vehicles, onCarSelect }: CarGridProps) {
 }
 
 interface CarCardProps {
-  vehicle: Vehicle;
-  onCarSelect: (car: Vehicle) => void;
+  vehicle: Product;
+  onCarSelect: (car: Product) => void;
 }
 
 function CarCard({ vehicle, onCarSelect }: CarCardProps) {

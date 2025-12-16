@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Vehicle } from '@/types/vehicle';
+import { Product } from '@/types/vehicle';
 
 interface RecommendationCarouselProps {
   vehicles: Vehicle[];
@@ -24,7 +24,7 @@ type DisplayCard = {
   isCenter: boolean;
   isPlaceholder: true;
 } | {
-  vehicle: Vehicle;
+  vehicle: Product;
   position: number;
   isCenter: boolean;
   isPlaceholder: false;
@@ -265,7 +265,7 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
 
 // VehicleCard component
 function VehicleCard({ vehicle, onItemSelect, index, onToggleFavorite, isFavorite }: { 
-  vehicle: Vehicle; 
+  vehicle: Product; 
   onItemSelect?: (vehicle: Vehicle) => void;
   index?: number;
   isCenter?: boolean;

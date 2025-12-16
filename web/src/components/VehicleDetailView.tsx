@@ -1,9 +1,9 @@
 'use client';
 
-import { Vehicle } from '@/types/vehicle';
+import { Product } from '@/types/vehicle';
 
 interface VehicleDetailViewProps {
-  vehicle: Vehicle;
+  vehicle: Product;
   onClose: () => void;
 }
 

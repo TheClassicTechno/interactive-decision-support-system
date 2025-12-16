@@ -491,6 +491,10 @@ export default function Home() {
       // Handle streaming response
       const data = await handleStreamingResponse(response);
       
+      if (!data) {
+        throw new Error('No data received from streaming response');
+      }
+      
       // Update session ID
       if (data.session_id) {
         setSessionId(data.session_id);

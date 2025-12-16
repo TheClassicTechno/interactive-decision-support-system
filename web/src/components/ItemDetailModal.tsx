@@ -1,10 +1,10 @@
 'use client';
 
 import { FC } from 'react';
-import { Vehicle } from '@/types/vehicle';
+import { Product } from '@/types/vehicle';
 
 interface ItemDetailModalProps {
-  item: Vehicle;
+  item: Product;
   onClose: () => void;
 }
 
@@ -75,7 +75,7 @@ const AttributeGrid: FC<{ attributes?: Record<string, unknown> }> = ({ attribute
   );
 };
 
-const formatPrice = (item: Vehicle) => {
+const formatPrice = (item: Product) => {
   if (item.price_text) return item.price_text;
   if (typeof item.price === 'number') return `$${item.price.toLocaleString()}`;
   if (typeof item.price_value === 'number') return `$${item.price_value.toLocaleString()}`;

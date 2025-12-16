@@ -1,6 +1,6 @@
 'use client';
 
-import { Vehicle } from '@/types/vehicle';
+import { Product } from '@/types/vehicle';
 
 interface FavoritesPageProps {
   favorites: Vehicle[];
@@ -11,8 +11,8 @@ interface FavoritesPageProps {
 }
 
 export default function FavoritesPage({ favorites, onToggleFavorite, isFavorite, onItemSelect, onClose }: FavoritesPageProps) {
-  const primaryImage = (vehicle: Vehicle) => vehicle.image_url;
-  const hasValidImage = (vehicle: Vehicle) => {
+  const primaryImage = (vehicle: Product) => vehicle.image_url;
+  const hasValidImage = (vehicle: Product) => {
     const img = primaryImage(vehicle);
     return img && !img.toLowerCase().includes('.svg');
   };

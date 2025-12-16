@@ -1,9 +1,9 @@
 'use client';
 
-import { Vehicle } from '@/types/vehicle';
+import { Product } from '@/types/vehicle';
 interface ItemGridProps {
-  vehicles: Vehicle[];
-  onItemSelect: (item: Vehicle) => void;
+  vehicles: Product[];
+  onItemSelect: (item: Product) => void;
 }
 
 export default function ItemGrid({ vehicles, onItemSelect }: ItemGridProps) {
@@ -44,8 +44,8 @@ export default function ItemGrid({ vehicles, onItemSelect }: ItemGridProps) {
 }
 
 interface ItemCardProps {
-  vehicle: Vehicle;
-  onItemSelect: (item: Vehicle) => void;
+  vehicle: Product;
+  onItemSelect: (item: Product) => void;
 }
 
 function ItemCard({ vehicle, onItemSelect }: ItemCardProps) {
