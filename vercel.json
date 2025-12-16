@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "bash copy-deps.sh && npm install && npm run build",
+  "buildCommand": "if [ -f copy-deps.sh ]; then bash copy-deps.sh; else echo 'Script not found, trying alternative...'; cd .. && cp -r api idss_agent config data requirements.txt web/ 2>/dev/null || true; fi && npm install && npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "rewrites": [
