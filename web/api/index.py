@@ -143,15 +143,32 @@ except ImportError as e:
     
     raise
 
-# Create ASGI handler for Vercel
+# Create ASGI handler for Vercel with error handling
 try:
     handler = Mangum(app, lifespan="off")
     logger.info("Successfully created Mangum handler")
 except Exception as e:
     logger.error(f"Failed to create Mangum handler: {e}")
     import traceback
-    logger.error(traceback.format_exc())
-    raise
+    error_trace = traceback.format_exc()
+    logger.error(error_trace)
+    
+    # Create a fallback handler that returns the error
+    def error_handler(event, context):
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({
+                'error': 'Handler initialization failed',
+                'message': str(e),
+                'traceback': error_trace,
+                'project_root': project_root,
+                'api_server_exists': os.path.exists(os.path.join(project_root, "api", "server.py")),
+                'directories': os.listdir(project_root) if os.path.exists(project_root) else 'NOT FOUND'
+            })
+        }
+    handler = error_handler
+    logger.warning("Using error handler fallback")
 
 # Export handler for Vercel
 __all__ = ["handler"]
