@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "if [ -f copy-deps.sh ]; then bash copy-deps.sh; else echo 'Script not found, trying alternative...'; cd .. && cp -r api idss_agent config data requirements.txt web/ 2>/dev/null || true; fi && npm install && npm run build",
+  "buildCommand": "bash copy-deps.sh && npm install && npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install && (python3 -m pip install -r requirements.txt -t . 2>&1 || python -m pip install -r requirements.txt -t . 2>&1 || echo 'Python dependencies install skipped - Vercel will handle automatically')",
+  "installCommand": "npm install",
   "rewrites": [
     {
       "source": "/backend-api/(.*)",
