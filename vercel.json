@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd web && bash copy-deps.sh && npm install && npm run build",
+  "buildCommand": "bash copy-deps.sh && npm install && npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "rewrites": [
