@@ -110,7 +110,6 @@ class IDSSApiService {
         mileage: product.mileage,
         miles: product.mileage,  // Backend might expect 'miles'
         location: product.location,
-        condition: product.condition,
         trim: product.trim,
         body_style: product.body_style,
         engine: product.engine,
