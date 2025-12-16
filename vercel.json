@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd .. && cp -r api idss_agent config data requirements.txt web/ 2>/dev/null || true && cd web && npm install && npm run build",
+  "buildCommand": "cd web && bash copy-deps.sh && npm install && npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm install",
   "rewrites": [

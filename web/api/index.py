@@ -60,20 +60,79 @@ if not os.getenv("PC_PARTS_DB"):
             os.environ["PC_PARTS_DB"] = db_path
             break
 
-# Add error handling for imports
+# Add comprehensive error handling and logging for debugging
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+logger.info(f"Initializing serverless function handler")
+logger.info(f"Current file: {current_file}")
+logger.info(f"Project root: {project_root}")
+logger.info(f"Python path: {sys.path[:3]}...")  # First 3 entries
+
+# Check if required directories exist
+required_dirs = ["api", "idss_agent"]
+for dir_name in required_dirs:
+    dir_path = os.path.join(project_root, dir_name)
+    exists = os.path.exists(dir_path)
+    logger.info(f"Directory {dir_name}: {'EXISTS' if exists else 'MISSING'} at {dir_path}")
+    if exists:
+        try:
+            files = os.listdir(dir_path)[:5]  # First 5 files
+            logger.info(f"  Sample files: {files}")
+        except Exception as e:
+            logger.warning(f"  Could not list files: {e}")
+
+# Check for api/server.py specifically
+api_server_path = os.path.join(project_root, "api", "server.py")
+logger.info(f"Looking for api/server.py at: {api_server_path}")
+logger.info(f"api/server.py exists: {os.path.exists(api_server_path)}")
+
 try:
+    logger.info("Attempting to import mangum...")
     from mangum import Mangum
+    logger.info("Successfully imported mangum")
+    
+    logger.info("Attempting to import api.server...")
     from api.server import app
+    logger.info("Successfully imported api.server")
 except ImportError as e:
-    # Log the error for debugging
-    import logging
-    logging.basicConfig(level=logging.ERROR)
-    logger = logging.getLogger(__name__)
     logger.error(f"Failed to import required modules: {e}")
+    logger.error(f"Import error type: {type(e).__name__}")
+    import traceback
+    logger.error(f"Traceback:\n{traceback.format_exc()}")
+    
+    # Try to provide helpful debugging info
+    logger.error("=" * 50)
+    logger.error("DEBUGGING INFORMATION")
+    logger.error("=" * 50)
     logger.error(f"Current file: {current_file}")
     logger.error(f"Project root: {project_root}")
-    logger.error(f"Python path: {sys.path}")
-    logger.error(f"Files in project_root: {os.listdir(project_root) if os.path.exists(project_root) else 'NOT FOUND'}")
+    logger.error(f"Python executable: {sys.executable}")
+    logger.error(f"Python version: {sys.version}")
+    logger.error(f"Python path entries:")
+    for i, path in enumerate(sys.path[:10]):  # First 10 entries
+        logger.error(f"  [{i}] {path}")
+    
+    if os.path.exists(project_root):
+        logger.error(f"Contents of project_root ({project_root}):")
+        try:
+            contents = os.listdir(project_root)
+            logger.error(f"  {contents[:20]}")  # First 20 items
+        except Exception as list_err:
+            logger.error(f"  Could not list: {list_err}")
+    
+    if os.path.exists(os.path.join(project_root, "api")):
+        logger.error(f"Contents of api/ directory:")
+        try:
+            api_contents = os.listdir(os.path.join(project_root, "api"))
+            logger.error(f"  {api_contents}")
+        except Exception as api_err:
+            logger.error(f"  Could not list api/: {api_err}")
+    
     raise
 
 # Create ASGI handler for Vercel
