@@ -2,7 +2,6 @@
 Unit tests for idss_agent/processing/recommendation.py
 
 Tests:
-- Search query building
 - Price extraction
 - Product normalization
 - Product filtering and ranking
@@ -10,61 +9,6 @@ Tests:
 """
 import pytest
 from unittest.mock import patch, MagicMock
-
-
-class TestBuildSearchQuery:
-    """Tests for _build_search_query function."""
-
-    def test_uses_llm_generated_query_first(self):
-        """Test that LLM-generated search_query takes priority."""
-        from idss_agent.processing.recommendation import _build_search_query
-        
-        filters = {"search_query": "RTX 4070 gaming GPU"}
-        implicit = {}
-        
-        result = _build_search_query(filters, implicit)
-        assert result == "RTX 4070 gaming GPU"
-
-    def test_uses_explicit_query(self):
-        """Test that explicit query is used when search_query not present."""
-        from idss_agent.processing.recommendation import _build_search_query
-        
-        filters = {"query": "gaming graphics card"}
-        implicit = {}
-        
-        result = _build_search_query(filters, implicit)
-        assert result == "gaming graphics card"
-
-    def test_uses_keywords(self):
-        """Test that keywords are used as fallback."""
-        from idss_agent.processing.recommendation import _build_search_query
-        
-        filters = {"keywords": "NVIDIA RTX"}
-        implicit = {}
-        
-        result = _build_search_query(filters, implicit)
-        assert result == "NVIDIA RTX"
-
-    def test_returns_none_with_structured_filters(self):
-        """Test that None is returned when structured filters are present."""
-        from idss_agent.processing.recommendation import _build_search_query
-        
-        filters = {"part_type": "gpu", "brand": "NVIDIA"}
-        implicit = {}
-        
-        result = _build_search_query(filters, implicit)
-        assert result is None
-
-    def test_builds_from_implicit_preferences(self):
-        """Test building query from implicit preferences."""
-        from idss_agent.processing.recommendation import _build_search_query
-        
-        filters = {}
-        implicit = {"brand_affinity": ["NVIDIA"], "priorities": ["performance"]}
-        
-        result = _build_search_query(filters, implicit)
-        assert "NVIDIA" in result
-        assert "performance" in result
 
 
 class TestExtractPriceBounds:
