@@ -11,13 +11,13 @@ from datetime import datetime
 class ProductFilters(TypedDict, total=False):
     """
     Explicit product search filters extracted from user input.
-    For electronics products (PC components, laptops, monitors, etc.).
+    For electronics products (PC components - GPU, CPU, Motherboard).
     """
     # Product specification filters
     brand: Optional[str]  # e.g., "AMD" or "Intel,ASUS" (comma-separated for multiple)
     year: Optional[str]  # e.g., "2022" or "2022-2024" (range format for release year)
     category: Optional[str]  # e.g., "CPU" or "GPU,Laptop" (product category/type)
-    part_type: Optional[str]  # e.g., "CPU", "GPU", "Motherboard" (specific part type)
+    part_type: Optional[str]  # e.g., "cpu", "gpu", "motherboard" (specific part type)
     series: Optional[str]  # e.g., "Ryzen 7" or "Core i7" (product series)
     
     # Product attributes
@@ -49,9 +49,51 @@ class ProductFilters(TypedDict, total=False):
     pcie_version: Optional[str]  # e.g., "5.0", "4.0" (PCIe version)
     tdp: Optional[str]  # e.g., "125", "250" (thermal design power in watts)
     
+    # GPU-specific filters
+    gpu_brand: Optional[str]  # e.g., "NVIDIA", "AMD", "Intel" (GPU manufacturer)
+    gpu_series: Optional[str]  # e.g., "RTX 4090", "RX 7900" (GPU model series)
+    gpu_tdp: Optional[str]  # e.g., "Under 150W", "250-300W" (GPU power draw)
+    power_connector: Optional[str]  # e.g., "8-pin", "16-pin (12VHPWR)" (power connector type)
+    recommended_psu: Optional[str]  # e.g., "750W", "850W" (recommended PSU wattage)
+    target_resolution: Optional[str]  # e.g., "1080p", "1440p", "4K" (target gaming resolution)
+    ray_tracing: Optional[bool]  # Ray tracing support
+    upscaling_support: Optional[str]  # e.g., "DLSS", "FSR", "XeSS" (upscaling technology)
+    gpu_performance_tier: Optional[str]  # e.g., "Entry", "Mid-Range", "High-End", "Enthusiast"
+    card_length: Optional[str]  # e.g., "Under 250mm", "300-350mm" (GPU card length)
+    slot_thickness: Optional[str]  # e.g., "2-slot", "3-slot" (PCIe slot thickness)
+    video_encoder: Optional[str]  # e.g., "NVENC", "AV1", "AMF" (hardware video encoder)
+    display_outputs: Optional[str]  # e.g., "HDMI 2.1", "DisplayPort 2.0" (display outputs)
+    
+    # CPU-specific filters
+    cpu_brand: Optional[str]  # e.g., "Intel", "AMD" (CPU manufacturer)
+    core_count: Optional[str]  # e.g., "8", "16" (number of CPU cores)
+    thread_count: Optional[str]  # e.g., "16", "32" (number of CPU threads)
+    boost_clock: Optional[str]  # e.g., "5.0GHz", "5.5GHz+" (max boost clock)
+    cache: Optional[str]  # e.g., "32MB", "64MB" (L3 cache size)
+    cpu_performance_tier: Optional[str]  # e.g., "Budget", "Mid-Range", "High-End"
+    primary_use_case: Optional[str]  # e.g., "Gaming", "Productivity", "Mixed Use"
+    cooling_requirement: Optional[str]  # e.g., "Stock Cooler", "AIO/Custom Loop"
+    integrated_graphics: Optional[bool]  # Integrated graphics support
+    overclocking_support: Optional[bool]  # Overclocking support
+    cpu_generation: Optional[str]  # e.g., "13th Gen Intel", "Ryzen 7000"
+    
+    # Motherboard-specific filters
+    supported_cpu_gen: Optional[str]  # e.g., "12th-14th Gen Intel" (supported CPU generations)
+    bios_flashback: Optional[bool]  # BIOS flashback support
+    dimm_slots: Optional[str]  # e.g., "2", "4" (number of DIMM slots)
+    max_ram_speed: Optional[str]  # e.g., "DDR5-6000", "DDR4-3600" (max supported RAM speed)
+    m2_slots: Optional[str]  # e.g., "2", "4" (number of M.2 slots)
+    sata_ports: Optional[str]  # e.g., "4", "8" (number of SATA ports)
+    usb_c_support: Optional[bool]  # USB-C support
+    lan_speed: Optional[str]  # e.g., "1G", "2.5G", "10G" (LAN speed)
+    vrm_tier: Optional[str]  # e.g., "Entry", "Mid-Range", "High-End" (VRM quality tier)
+    
     # Retail listing filters
     price: Optional[str]  # e.g., "100-500" (range format)
+    price_min: Optional[float]  # Minimum price
+    price_max: Optional[float]  # Maximum price
     seller: Optional[str]  # e.g., "Best Buy" or "Amazon,Newegg" (preferred retailers)
+    condition: Optional[str]  # e.g., "new", "used" (product condition)
     
     # Search query
     query: Optional[str]  # Free-form search query
@@ -78,7 +120,7 @@ class ProductFiltersPydantic(BaseModel):
     brand: Optional[str] = Field(None, description="e.g., 'AMD' or 'Intel,ASUS' (comma-separated for multiple brands)")
     year: Optional[str] = Field(None, description="e.g., '2022' or '2022-2024' (range format for release year)")
     category: Optional[str] = Field(None, description="e.g., 'CPU' or 'GPU,Laptop' (product category/type)")
-    part_type: Optional[str] = Field(None, description="e.g., 'CPU', 'GPU', 'Motherboard' (specific part type)")
+    part_type: Optional[str] = Field(None, description="e.g., 'cpu', 'gpu', 'motherboard' (specific part type)")
     series: Optional[str] = Field(None, description="e.g., 'Ryzen 7' or 'Core i7' (product series)")
     
     # Product attributes
@@ -110,9 +152,51 @@ class ProductFiltersPydantic(BaseModel):
     pcie_version: Optional[str] = Field(None, description="e.g., '5.0', '4.0' (PCIe version)")
     tdp: Optional[str] = Field(None, description="e.g., '125', '250' (thermal design power in watts)")
     
+    # GPU-specific filters
+    gpu_brand: Optional[str] = Field(None, description="e.g., 'NVIDIA', 'AMD', 'Intel' (GPU manufacturer)")
+    gpu_series: Optional[str] = Field(None, description="e.g., 'RTX 4090', 'RX 7900' (GPU model series)")
+    gpu_tdp: Optional[str] = Field(None, description="e.g., 'Under 150W', '250-300W' (GPU power draw)")
+    power_connector: Optional[str] = Field(None, description="e.g., '8-pin', '16-pin (12VHPWR)' (power connector type)")
+    recommended_psu: Optional[str] = Field(None, description="e.g., '750W', '850W' (recommended PSU wattage)")
+    target_resolution: Optional[str] = Field(None, description="e.g., '1080p', '1440p', '4K' (target gaming resolution)")
+    ray_tracing: Optional[bool] = Field(None, description="Ray tracing support")
+    upscaling_support: Optional[str] = Field(None, description="e.g., 'DLSS', 'FSR', 'XeSS' (upscaling technology)")
+    gpu_performance_tier: Optional[str] = Field(None, description="e.g., 'Entry', 'Mid-Range', 'High-End', 'Enthusiast'")
+    card_length: Optional[str] = Field(None, description="e.g., 'Under 250mm', '300-350mm' (GPU card length)")
+    slot_thickness: Optional[str] = Field(None, description="e.g., '2-slot', '3-slot' (PCIe slot thickness)")
+    video_encoder: Optional[str] = Field(None, description="e.g., 'NVENC', 'AV1', 'AMF' (hardware video encoder)")
+    display_outputs: Optional[str] = Field(None, description="e.g., 'HDMI 2.1', 'DisplayPort 2.0' (display outputs)")
+    
+    # CPU-specific filters
+    cpu_brand: Optional[str] = Field(None, description="e.g., 'Intel', 'AMD' (CPU manufacturer)")
+    core_count: Optional[str] = Field(None, description="e.g., '8', '16' (number of CPU cores)")
+    thread_count: Optional[str] = Field(None, description="e.g., '16', '32' (number of CPU threads)")
+    boost_clock: Optional[str] = Field(None, description="e.g., '5.0GHz', '5.5GHz+' (max boost clock)")
+    cache: Optional[str] = Field(None, description="e.g., '32MB', '64MB' (L3 cache size)")
+    cpu_performance_tier: Optional[str] = Field(None, description="e.g., 'Budget', 'Mid-Range', 'High-End'")
+    primary_use_case: Optional[str] = Field(None, description="e.g., 'Gaming', 'Productivity', 'Mixed Use'")
+    cooling_requirement: Optional[str] = Field(None, description="e.g., 'Stock Cooler', 'AIO/Custom Loop'")
+    integrated_graphics: Optional[bool] = Field(None, description="Integrated graphics support")
+    overclocking_support: Optional[bool] = Field(None, description="Overclocking support")
+    cpu_generation: Optional[str] = Field(None, description="e.g., '13th Gen Intel', 'Ryzen 7000'")
+    
+    # Motherboard-specific filters
+    supported_cpu_gen: Optional[str] = Field(None, description="e.g., '12th-14th Gen Intel' (supported CPU generations)")
+    bios_flashback: Optional[bool] = Field(None, description="BIOS flashback support")
+    dimm_slots: Optional[str] = Field(None, description="e.g., '2', '4' (number of DIMM slots)")
+    max_ram_speed: Optional[str] = Field(None, description="e.g., 'DDR5-6000', 'DDR4-3600' (max supported RAM speed)")
+    m2_slots: Optional[str] = Field(None, description="e.g., '2', '4' (number of M.2 slots)")
+    sata_ports: Optional[str] = Field(None, description="e.g., '4', '8' (number of SATA ports)")
+    usb_c_support: Optional[bool] = Field(None, description="USB-C support")
+    lan_speed: Optional[str] = Field(None, description="e.g., '1G', '2.5G', '10G' (LAN speed)")
+    vrm_tier: Optional[str] = Field(None, description="e.g., 'Entry', 'Mid-Range', 'High-End' (VRM quality tier)")
+    
     # Retail listing filters
     price: Optional[str] = Field(None, description="e.g., '100-500' (range format)")
+    price_min: Optional[float] = Field(None, description="Minimum price")
+    price_max: Optional[float] = Field(None, description="Maximum price")
     seller: Optional[str] = Field(None, description="e.g., 'Best Buy' or 'Amazon,Newegg' (preferred retailers)")
+    condition: Optional[str] = Field(None, description="e.g., 'new', 'used' (product condition)")
     
     # Search query
     query: Optional[str] = Field(None, description="Free-form search query")

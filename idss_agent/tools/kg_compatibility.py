@@ -384,6 +384,43 @@ class Neo4jCompatibilityTool:
         year: Optional[str] = None,
         series: Optional[str] = None,
         seller: Optional[str] = None,
+        # GPU-specific filters
+        gpu_brand: Optional[str] = None,
+        gpu_series: Optional[str] = None,
+        gpu_tdp: Optional[str] = None,
+        power_connector: Optional[str] = None,
+        recommended_psu: Optional[str] = None,
+        target_resolution: Optional[str] = None,
+        ray_tracing: Optional[bool] = None,
+        upscaling_support: Optional[str] = None,
+        gpu_performance_tier: Optional[str] = None,
+        card_length: Optional[str] = None,
+        slot_thickness: Optional[str] = None,
+        video_encoder: Optional[str] = None,
+        display_outputs: Optional[str] = None,
+        # CPU-specific filters
+        cpu_brand: Optional[str] = None,
+        core_count: Optional[str] = None,
+        thread_count: Optional[str] = None,
+        boost_clock: Optional[str] = None,
+        cache: Optional[str] = None,
+        cpu_performance_tier: Optional[str] = None,
+        primary_use_case: Optional[str] = None,
+        cooling_requirement: Optional[str] = None,
+        integrated_graphics: Optional[bool] = None,
+        overclocking_support: Optional[bool] = None,
+        cpu_generation: Optional[str] = None,
+        # Motherboard-specific filters
+        supported_cpu_gen: Optional[str] = None,
+        bios_flashback: Optional[bool] = None,
+        dimm_slots: Optional[str] = None,
+        max_ram_speed: Optional[str] = None,
+        m2_slots: Optional[str] = None,
+        sata_ports: Optional[str] = None,
+        usb_c_support: Optional[bool] = None,
+        lan_speed: Optional[str] = None,
+        vrm_tier: Optional[str] = None,
+        condition: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
         namespace: str = "pc_parts"
@@ -412,6 +449,40 @@ class Neo4jCompatibilityTool:
             year: Year filter (can be range like "2022-2024")
             series: Series filter
             seller: Seller filter
+            gpu_brand: GPU brand filter (NVIDIA, AMD, Intel)
+            gpu_series: GPU series filter (RTX 4090, RX 7900, etc.)
+            gpu_tdp: GPU TDP/power draw filter
+            power_connector: GPU power connector type
+            recommended_psu: Recommended PSU wattage
+            target_resolution: Target gaming resolution (1080p, 1440p, 4K)
+            ray_tracing: Ray tracing support
+            upscaling_support: Upscaling technology (DLSS, FSR, XeSS)
+            gpu_performance_tier: GPU performance tier
+            card_length: GPU card length
+            slot_thickness: GPU slot thickness
+            video_encoder: Hardware video encoder
+            display_outputs: Display outputs
+            cpu_brand: CPU brand filter (Intel, AMD)
+            core_count: CPU core count
+            thread_count: CPU thread count
+            boost_clock: CPU boost clock
+            cache: CPU cache size
+            cpu_performance_tier: CPU performance tier
+            primary_use_case: Primary use case (Gaming, Productivity, etc.)
+            cooling_requirement: Cooling requirement
+            integrated_graphics: Integrated graphics support
+            overclocking_support: Overclocking support
+            cpu_generation: CPU generation
+            supported_cpu_gen: Supported CPU generations (for motherboards)
+            bios_flashback: BIOS flashback support
+            dimm_slots: Number of DIMM slots
+            max_ram_speed: Maximum RAM speed
+            m2_slots: Number of M.2 slots
+            sata_ports: Number of SATA ports
+            usb_c_support: USB-C support
+            lan_speed: LAN speed
+            vrm_tier: VRM tier
+            condition: Product condition (new, used)
             limit: Maximum number of results
             offset: Offset for pagination
             namespace: Namespace for nodes (default: "pc_parts")
@@ -537,6 +608,134 @@ class Neo4jCompatibilityTool:
                 if seller:
                     where_conditions.append("toLower(p.seller) CONTAINS toLower($seller)")
                     params["seller"] = seller
+                
+                # GPU-specific filters
+                if gpu_brand:
+                    brands = [b.strip() for b in gpu_brand.split(",")]
+                    if len(brands) == 1:
+                        where_conditions.append("toLower(p.brand) = toLower($gpu_brand)")
+                        params["gpu_brand"] = brands[0]
+                    else:
+                        gpu_brand_conditions = []
+                        for i, b in enumerate(brands):
+                            param_name = f"gpu_brand_{i}"
+                            gpu_brand_conditions.append(f"toLower(p.brand) = toLower(${param_name})")
+                            params[param_name] = b.strip()
+                        where_conditions.append(f"({' OR '.join(gpu_brand_conditions)})")
+                if gpu_series:
+                    where_conditions.append("toLower(p.series) CONTAINS toLower($gpu_series) OR toLower(p.name) CONTAINS toLower($gpu_series)")
+                    params["gpu_series"] = gpu_series
+                if gpu_tdp:
+                    where_conditions.append("toLower(p.tdp) CONTAINS toLower($gpu_tdp) OR p.tdp = $gpu_tdp")
+                    params["gpu_tdp"] = gpu_tdp
+                if power_connector:
+                    where_conditions.append("toLower(p.power_connector) CONTAINS toLower($power_connector)")
+                    params["power_connector"] = power_connector
+                if recommended_psu:
+                    where_conditions.append("toLower(p.recommended_psu) CONTAINS toLower($recommended_psu)")
+                    params["recommended_psu"] = recommended_psu
+                if target_resolution:
+                    where_conditions.append("toLower(p.target_resolution) CONTAINS toLower($target_resolution)")
+                    params["target_resolution"] = target_resolution
+                if ray_tracing is not None:
+                    where_conditions.append("p.ray_tracing = $ray_tracing")
+                    params["ray_tracing"] = ray_tracing
+                if upscaling_support:
+                    where_conditions.append("toLower(p.upscaling_support) CONTAINS toLower($upscaling_support)")
+                    params["upscaling_support"] = upscaling_support
+                if gpu_performance_tier:
+                    where_conditions.append("toLower(p.performance_tier) CONTAINS toLower($gpu_performance_tier)")
+                    params["gpu_performance_tier"] = gpu_performance_tier
+                if card_length:
+                    where_conditions.append("toLower(p.card_length) CONTAINS toLower($card_length)")
+                    params["card_length"] = card_length
+                if slot_thickness:
+                    where_conditions.append("toLower(p.slot_thickness) CONTAINS toLower($slot_thickness)")
+                    params["slot_thickness"] = slot_thickness
+                if video_encoder:
+                    where_conditions.append("toLower(p.video_encoder) CONTAINS toLower($video_encoder)")
+                    params["video_encoder"] = video_encoder
+                if display_outputs:
+                    where_conditions.append("toLower(p.display_outputs) CONTAINS toLower($display_outputs)")
+                    params["display_outputs"] = display_outputs
+                
+                # CPU-specific filters
+                if cpu_brand:
+                    brands = [b.strip() for b in cpu_brand.split(",")]
+                    if len(brands) == 1:
+                        where_conditions.append("toLower(p.brand) = toLower($cpu_brand)")
+                        params["cpu_brand"] = brands[0]
+                    else:
+                        cpu_brand_conditions = []
+                        for i, b in enumerate(brands):
+                            param_name = f"cpu_brand_{i}"
+                            cpu_brand_conditions.append(f"toLower(p.brand) = toLower(${param_name})")
+                            params[param_name] = b.strip()
+                        where_conditions.append(f"({' OR '.join(cpu_brand_conditions)})")
+                if core_count:
+                    where_conditions.append("p.core_count = $core_count OR toString(p.core_count) = $core_count")
+                    params["core_count"] = core_count
+                if thread_count:
+                    where_conditions.append("p.thread_count = $thread_count OR toString(p.thread_count) = $thread_count")
+                    params["thread_count"] = thread_count
+                if boost_clock:
+                    where_conditions.append("toLower(p.boost_clock) CONTAINS toLower($boost_clock)")
+                    params["boost_clock"] = boost_clock
+                if cache:
+                    where_conditions.append("toLower(p.cache) CONTAINS toLower($cache) OR p.cache = $cache")
+                    params["cache"] = cache
+                if cpu_performance_tier:
+                    where_conditions.append("toLower(p.performance_tier) CONTAINS toLower($cpu_performance_tier)")
+                    params["cpu_performance_tier"] = cpu_performance_tier
+                if primary_use_case:
+                    where_conditions.append("toLower(p.primary_use_case) CONTAINS toLower($primary_use_case)")
+                    params["primary_use_case"] = primary_use_case
+                if cooling_requirement:
+                    where_conditions.append("toLower(p.cooling_requirement) CONTAINS toLower($cooling_requirement)")
+                    params["cooling_requirement"] = cooling_requirement
+                if integrated_graphics is not None:
+                    where_conditions.append("p.integrated_graphics = $integrated_graphics")
+                    params["integrated_graphics"] = integrated_graphics
+                if overclocking_support is not None:
+                    where_conditions.append("p.overclocking_support = $overclocking_support")
+                    params["overclocking_support"] = overclocking_support
+                if cpu_generation:
+                    where_conditions.append("toLower(p.generation) CONTAINS toLower($cpu_generation) OR toLower(p.name) CONTAINS toLower($cpu_generation)")
+                    params["cpu_generation"] = cpu_generation
+                
+                # Motherboard-specific filters
+                if supported_cpu_gen:
+                    where_conditions.append("toLower(p.supported_cpu_gen) CONTAINS toLower($supported_cpu_gen)")
+                    params["supported_cpu_gen"] = supported_cpu_gen
+                if bios_flashback is not None:
+                    where_conditions.append("p.bios_flashback = $bios_flashback")
+                    params["bios_flashback"] = bios_flashback
+                if dimm_slots:
+                    where_conditions.append("p.dimm_slots = $dimm_slots OR toString(p.dimm_slots) = $dimm_slots")
+                    params["dimm_slots"] = dimm_slots
+                if max_ram_speed:
+                    where_conditions.append("toLower(p.max_ram_speed) CONTAINS toLower($max_ram_speed)")
+                    params["max_ram_speed"] = max_ram_speed
+                if m2_slots:
+                    where_conditions.append("p.m2_slots = $m2_slots OR toString(p.m2_slots) = $m2_slots")
+                    params["m2_slots"] = m2_slots
+                if sata_ports:
+                    where_conditions.append("p.sata_ports = $sata_ports OR toString(p.sata_ports) = $sata_ports")
+                    params["sata_ports"] = sata_ports
+                if usb_c_support is not None:
+                    where_conditions.append("p.usb_c_support = $usb_c_support")
+                    params["usb_c_support"] = usb_c_support
+                if lan_speed:
+                    where_conditions.append("toLower(p.lan_speed) CONTAINS toLower($lan_speed)")
+                    params["lan_speed"] = lan_speed
+                if vrm_tier:
+                    where_conditions.append("toLower(p.vrm_tier) CONTAINS toLower($vrm_tier)")
+                    params["vrm_tier"] = vrm_tier
+                
+                # Common filters
+                if condition:
+                    where_conditions.append("toLower(p.condition) CONTAINS toLower($condition)")
+                    params["condition"] = condition
 
                 # Build WHERE clause
                 if where_conditions:
