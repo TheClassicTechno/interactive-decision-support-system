@@ -76,11 +76,36 @@ class LocalElectronicsStore:
                 "Build it via dataset_builder/fetch_pc_parts_dataset.py."
             )
         self.db_path = path
+        self._table_name = self._detect_table_name()
     
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         return conn
+    
+    def _detect_table_name(self) -> str:
+        """Detect the correct table name in the database.
+        
+        Supports both 'pc_parts' (original) and 'pc_parts_augmented' (augmented) tables.
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('pc_parts', 'pc_parts_augmented')")
+        tables = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        
+        # Prefer augmented table if it exists (has more attributes)
+        if 'pc_parts_augmented' in tables:
+            logger.info(f"Using augmented table 'pc_parts_augmented' from {self.db_path}")
+            return 'pc_parts_augmented'
+        elif 'pc_parts' in tables:
+            logger.info(f"Using standard table 'pc_parts' from {self.db_path}")
+            return 'pc_parts'
+        else:
+            raise ElectronicsStoreError(
+                f"No valid pc_parts table found in {self.db_path}. "
+                f"Expected 'pc_parts' or 'pc_parts_augmented', found: {tables}"
+            )
     
     def search_products(
         self,
@@ -206,8 +231,8 @@ class LocalElectronicsStore:
         offset: int,
     ) -> Tuple[str, Tuple[Any, ...]]:
         """Construct SQL query and parameter tuple from filters."""
-        # Use schema from pc_parts_schema.sql
-        select_clause = """
+        # Use schema from pc_parts_schema.sql - table name detected dynamically
+        select_clause = f"""
             SELECT id, product_id, slug, product_type, series, model, brand,
                    size, color, year, price, seller, rating, rating_count,
                    socket, architecture, pcie_version, ram_standard, tdp,
@@ -216,7 +241,7 @@ class LocalElectronicsStore:
                    wattage, certification, modularity, atx_version, noise,
                    supports_pcie5_power, storage, capacity, storage_type,
                    cooling_type, tdp_support, created_at, updated_at, raw_name
-            FROM pc_parts
+            FROM {self._table_name}
         """
         conditions: List[str] = []
         params: List[Any] = []
@@ -545,7 +570,7 @@ class LocalElectronicsStore:
         Returns:
             Product dictionary or None if not found.
         """
-        sql = """
+        sql = f"""
             SELECT id, product_id, slug, product_type, series, model, brand,
                    size, color, year, price, seller, rating, rating_count,
                    socket, architecture, pcie_version, ram_standard, tdp,
@@ -554,7 +579,7 @@ class LocalElectronicsStore:
                    wattage, certification, modularity, atx_version, noise,
                    supports_pcie5_power, storage, capacity, storage_type,
                    cooling_type, tdp_support, created_at, updated_at, raw_name
-            FROM pc_parts
+            FROM {self._table_name}
             WHERE product_id = ? OR id = ?
             LIMIT 1
         """
