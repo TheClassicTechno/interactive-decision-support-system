@@ -19,20 +19,32 @@ logger = get_logger("components.recommendation")
 DEFAULT_COUNTRY = "us"
 
 
-def _build_search_query(filters: Dict[str, Any], implicit: Dict[str, Any]) -> str:
-    """Create a keyword query for database search from filters and preferences."""
+def _build_search_query(filters: Dict[str, Any], implicit: Dict[str, Any], exclude_category: bool = False) -> str:
+    """Create a keyword query for database search from filters and preferences.
+    
+    Args:
+        filters: Explicit filter dictionary
+        implicit: Implicit preferences dictionary  
+        exclude_category: If True, don't include category/part_type as search keywords
+                         (useful when part_type is already used as a filter)
+    """
 
     keywords: List[str] = []
 
-    for key in [
+    # Keys that are actual search terms (not category-type filters)
+    search_keys = [
         "search_query",
         "query",
         "keywords",
         "product",
         "product_name",
-        "category",
-        "subcategory",
-    ]:
+    ]
+    
+    # Only include category if not excluded (when part_type filter is already applied)
+    if not exclude_category:
+        search_keys.extend(["category", "subcategory"])
+    
+    for key in search_keys:
         value = filters.get(key)
         if value:
             keywords.append(str(value))
@@ -401,25 +413,140 @@ def _is_professional_product(product: Dict[str, Any]) -> bool:
     return False
 
 
-def _rank_products_for_consumer_use(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _get_product_year(product: Dict[str, Any]) -> Optional[int]:
+    """Extract year from product, handling various formats."""
+    # Try direct year field
+    year = product.get("year")
+    if year is not None:
+        try:
+            return int(year)
+        except (TypeError, ValueError):
+            pass
+    
+    # Try from _raw dict
+    raw = product.get("_raw", {})
+    year = raw.get("year")
+    if year is not None:
+        try:
+            return int(year)
+        except (TypeError, ValueError):
+            pass
+    
+    # Try from product attributes
+    attrs = product.get("product", {}).get("attributes", {})
+    year = attrs.get("year")
+    if year is not None:
+        try:
+            return int(year)
+        except (TypeError, ValueError):
+            pass
+    
+    return None
+
+
+def _get_performance_tier(product: Dict[str, Any]) -> str:
+    """
+    Determine performance tier from product attributes.
+    Returns: 'entry', 'mid', 'high', 'enthusiast', 'professional', or 'unknown'
+    """
+    # Check for explicit performance_tier attribute
+    tier = product.get("performance_tier")
+    if tier:
+        return tier.lower()
+    
+    # Try from _raw dict
+    raw = product.get("_raw", {})
+    tier = raw.get("performance_tier") or raw.get("gpu_performance_tier") or raw.get("cpu_performance_tier")
+    if tier:
+        return tier.lower()
+    
+    # Try from product attributes
+    attrs = product.get("product", {}).get("attributes", {})
+    tier = attrs.get("performance_tier") or attrs.get("gpu_performance_tier") or attrs.get("cpu_performance_tier")
+    if tier:
+        return tier.lower()
+    
+    # Fallback: infer from series/model names
+    title = (product.get("title") or product.get("name") or product.get("raw_name") or "").upper()
+    series = (product.get("series") or raw.get("series") or "").upper()
+    
+    # GPU tier inference from series names
+    # High-end/Enthusiast NVIDIA
+    if any(x in title or x in series for x in ["RTX 4090", "RTX 4080", "RTX 5090", "RTX 5080"]):
+        return "enthusiast"
+    if any(x in title or x in series for x in ["RTX 4070 TI", "RTX 4070TI", "RTX 5070 TI", "RTX 5070TI"]):
+        return "high"
+    # Mid-range NVIDIA
+    if any(x in title or x in series for x in ["RTX 4070", "RTX 4060 TI", "RTX 4060TI", "RTX 5070", "RTX 5060 TI"]):
+        return "mid"
+    # Entry NVIDIA
+    if any(x in title or x in series for x in ["RTX 4060", "RTX 4050", "RTX 5060", "GTX 1650", "GTX 1660"]):
+        return "entry"
+    
+    # High-end/Enthusiast AMD
+    if any(x in title or x in series for x in ["RX 7900 XTX", "RX 7900 XT", "RX 9070 XT"]):
+        return "enthusiast"
+    if any(x in title or x in series for x in ["RX 7800 XT", "RX 9070"]):
+        return "high"
+    # Mid-range AMD
+    if any(x in title or x in series for x in ["RX 7700 XT", "RX 7600 XT", "RX 7600"]):
+        return "mid"
+    # Entry AMD
+    if any(x in title or x in series for x in ["RX 6600", "RX 6500", "RX 6400"]):
+        return "entry"
+    
+    return "unknown"
+
+
+def _rank_products_for_consumer_use(
+    products: List[Dict[str, Any]], 
+    prefer_tier: Optional[str] = "mid",
+    prefer_recent: bool = True
+) -> List[Dict[str, Any]]:
     """
     Rank products to prioritize consumer/personal use options.
-    Filters out professional products and ranks remaining by price (ascending).
+    
+    Args:
+        products: List of product dictionaries
+        prefer_tier: Preferred performance tier ('entry', 'mid', 'high', 'enthusiast', None for no preference)
+        prefer_recent: If True, prioritize more recent products (relative to others in the list)
     """
     # Filter out professional products
     consumer_products = [p for p in products if not _is_professional_product(p)]
     
     # If we filtered out all products, keep some professional ones as fallback
-    # but prefer consumer products
     if not consumer_products and products:
         logger.warning("All products filtered as professional, keeping some as fallback")
-        consumer_products = products[:10]  # Keep top 10 as fallback
+        consumer_products = products[:10]
     
-    # Sort by price (ascending) - prefer affordable consumer options
+    if not consumer_products:
+        return []
+    
+    # Find the max year in the dataset for relative year scoring
+    years = [_get_product_year(p) for p in consumer_products]
+    valid_years = [y for y in years if y is not None]
+    max_year = max(valid_years) if valid_years else None
+    min_year = min(valid_years) if valid_years else None
+    year_range = (max_year - min_year) if max_year and min_year and max_year != min_year else 1
+    
+    # Performance tier preference mapping (lower score = more preferred)
+    tier_preference = {
+        "entry": 3,
+        "mid": 1,  # Mid-range preferred for commercial use
+        "high": 2,
+        "enthusiast": 4,
+        "professional": 5,
+        "unknown": 3,
+    }
+    
+    # If a specific tier is preferred, adjust preferences
+    if prefer_tier:
+        prefer_tier = prefer_tier.lower()
+        tier_preference = {k: (0 if k == prefer_tier else v) for k, v in tier_preference.items()}
+    
     def get_price(product: Dict[str, Any]) -> float:
         price = product.get("price_value") or product.get("price")
         if price is None:
-            # Try to extract from price_text
             price_text = product.get("price_text", "")
             if price_text:
                 match = re.search(r'[\d,]+\.?\d*', price_text.replace(',', ''))
@@ -433,7 +560,47 @@ def _rank_products_for_consumer_use(products: List[Dict[str, Any]]) -> List[Dict
         except (TypeError, ValueError):
             return float('inf')
     
-    consumer_products.sort(key=get_price)
+    def compute_score(product: Dict[str, Any]) -> tuple:
+        """
+        Compute a ranking score for the product.
+        Returns a tuple for multi-criteria sorting (lower is better).
+        """
+        # Year score: 0 = most recent, 1 = oldest (relative to dataset)
+        year = _get_product_year(product)
+        if year is not None and max_year is not None:
+            year_score = (max_year - year) / year_range if year_range > 0 else 0
+        else:
+            year_score = 0.5  # Unknown year gets middle score
+        
+        # Tier score
+        tier = _get_performance_tier(product)
+        tier_score = tier_preference.get(tier, 3)
+        
+        # Price score (normalized, lower is better for budget-conscious)
+        price = get_price(product)
+        # Clamp price for normalization
+        price_score = min(price / 2000, 2.0) if price != float('inf') else 2.0
+        
+        # Combined score weights:
+        # - Year: 30% weight (prefer recent)
+        # - Tier: 40% weight (prefer mid-range for commercial use)
+        # - Price: 30% weight (prefer affordable)
+        if prefer_recent:
+            combined_score = (year_score * 0.3) + (tier_score * 0.4) + (price_score * 0.3)
+        else:
+            combined_score = (tier_score * 0.5) + (price_score * 0.5)
+        
+        # Return tuple: (combined_score, tier_score, year_score, price)
+        # This allows stable sorting with tiebreakers
+        return (combined_score, tier_score, year_score, price)
+    
+    # Sort by computed score
+    consumer_products.sort(key=compute_score)
+    
+    logger.info(
+        "Ranked %d products: max_year=%s, min_year=%s, prefer_tier=%s",
+        len(consumer_products), max_year, min_year, prefer_tier
+    )
     
     return consumer_products
 
@@ -491,14 +658,15 @@ def update_recommendation_list(
     filters = state["explicit_filters"].copy()
     implicit = state["implicit_preferences"].copy()
 
-    # Build search parameters
-    search_query = _build_search_query(filters, implicit)
-    price_bounds = _extract_price_bounds(filters)
-    
     # Extract part_type from category if available
     part_type = filters.get("category") or filters.get("part_type") or filters.get("type")
     if part_type:
         part_type = part_type.lower().strip()
+    
+    # Build search parameters - exclude category from text search if part_type is already set
+    # This prevents redundant searches like "WHERE raw_name LIKE '%GPU%' AND product_type = 'gpu'"
+    search_query = _build_search_query(filters, implicit, exclude_category=bool(part_type))
+    price_bounds = _extract_price_bounds(filters)
     
     # Extract brand from filters
     brand = filters.get("brand")

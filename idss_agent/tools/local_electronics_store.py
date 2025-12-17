@@ -240,7 +240,8 @@ class LocalElectronicsStore:
                    interface, power_connector, chipset, form_factor,
                    wattage, certification, modularity, atx_version, noise,
                    supports_pcie5_power, storage, capacity, storage_type,
-                   cooling_type, tdp_support, created_at, updated_at, raw_name
+                   cooling_type, tdp_support, created_at, updated_at, raw_name,
+                   imageurl, performance_tier
             FROM {self._table_name}
         """
         conditions: List[str] = []
@@ -495,10 +496,16 @@ class LocalElectronicsStore:
                         "interface", "power_connector", "chipset", "form_factor",
                         "wattage", "certification", "modularity", "atx_version", "noise",
                         "supports_pcie5_power", "storage", "capacity", "storage_type",
-                        "cooling_type", "tdp_support"]:
+                        "cooling_type", "tdp_support", "performance_tier"]:
                 value = get_row_value(attr)
                 if value is not None:
                     attributes[attr] = value
+            
+            # Get image URL
+            image_url = get_row_value("imageurl")
+            
+            # Get performance tier
+            performance_tier = get_row_value("performance_tier")
             
             # Get common fields
             row_id = get_row_value("id")
@@ -541,6 +548,11 @@ class LocalElectronicsStore:
                 "year": int(year) if year is not None else None,
                 "attributes": attributes,
                 "specs": attributes,  # Use same dict for compatibility
+                "image_url": image_url,
+                "imageUrl": image_url,
+                "image": image_url,
+                "thumbnail": image_url,
+                "performance_tier": performance_tier,
                 "_source": "local_db",
             }
             
@@ -578,7 +590,8 @@ class LocalElectronicsStore:
                    interface, power_connector, chipset, form_factor,
                    wattage, certification, modularity, atx_version, noise,
                    supports_pcie5_power, storage, capacity, storage_type,
-                   cooling_type, tdp_support, created_at, updated_at, raw_name
+                   cooling_type, tdp_support, created_at, updated_at, raw_name,
+                   imageurl, performance_tier
             FROM {self._table_name}
             WHERE product_id = ? OR id = ?
             LIMIT 1
