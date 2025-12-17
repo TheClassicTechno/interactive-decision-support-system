@@ -33,7 +33,9 @@ from api.models import (
     EventRequest,
     EventResponse,
     EventsResponse,
-    FavoriteRequest
+    FavoriteRequest,
+    FiltersRequest,
+    FiltersResponse
 )
 
 # Setup logging early so we can use it for warnings
@@ -542,6 +544,112 @@ async def handle_favorite(
             suggested_followups=[],
             comparison_table=None
         )
+
+
+@app.post("/session/{session_id}/filters", response_model=FiltersResponse)
+async def apply_filters(
+    session_id: str,
+    request: FiltersRequest
+):
+    """
+    Apply filters directly to session state without sending a chat message.
+
+    This endpoint:
+    1. Updates the session's explicit_filters state directly
+    2. Triggers a product search with the new filters
+    3. Returns the updated product list
+
+    Args:
+        session_id: Session ID
+        request: FiltersRequest with filter key-value pairs
+
+    Returns:
+        FiltersResponse with updated filters and products
+    """
+    # Import here to avoid circular imports
+    from idss_agent.processing.recommendation import update_recommendation_list
+
+    # Get or create session state
+    if session_id not in sessions:
+        sessions[session_id] = create_initial_state()
+
+    state = sessions[session_id]
+
+    # Update filters directly in session state
+    new_filters = request.filters
+    
+    # Merge new filters with existing ones (or replace entirely if empty)
+    if new_filters:
+        # Update explicit filters
+        current_filters = state.get("explicit_filters", {})
+        
+        # Clear existing filters if part_type changed or if clearing
+        if not new_filters or new_filters.get("part_type") != current_filters.get("part_type"):
+            state["explicit_filters"] = dict(new_filters)
+        else:
+            # Merge filters
+            state["explicit_filters"].update(new_filters)
+    else:
+        # Clear all filters if empty object passed
+        state["explicit_filters"] = {}
+
+    logger.info(f"Session {session_id}: Applied filters directly: {state['explicit_filters']}")
+
+    # Trigger product search with new filters
+    try:
+        state = update_recommendation_list(state)
+        sessions[session_id] = state
+    except Exception as e:
+        logger.error(f"Error updating recommendations after filter change: {e}")
+
+    # Get updated products
+    recommended_products = state.get('recommended_products', [])
+
+    return FiltersResponse(
+        session_id=session_id,
+        filters=state.get("explicit_filters", {}),
+        vehicles=recommended_products[:20] if recommended_products else [],
+        total=len(recommended_products)
+    )
+
+
+@app.delete("/session/{session_id}/filters", response_model=FiltersResponse)
+async def clear_filters(session_id: str):
+    """
+    Clear all filters from session state.
+
+    Args:
+        session_id: Session ID
+
+    Returns:
+        FiltersResponse with empty filters and default products
+    """
+    from idss_agent.processing.recommendation import update_recommendation_list
+
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    state = sessions[session_id]
+
+    # Clear all explicit filters
+    state["explicit_filters"] = {}
+    logger.info(f"Session {session_id}: Cleared all filters")
+
+    # Trigger product search with cleared filters
+    try:
+        state = update_recommendation_list(state)
+        sessions[session_id] = state
+    except Exception as e:
+        logger.error(f"Error updating recommendations after clearing filters: {e}")
+
+    recommended_products = state.get('recommended_products', [])
+
+    return FiltersResponse(
+        session_id=session_id,
+        filters={},
+        vehicles=recommended_products[:20] if recommended_products else [],
+        total=len(recommended_products)
+    )
 
 
 if __name__ == "__main__":

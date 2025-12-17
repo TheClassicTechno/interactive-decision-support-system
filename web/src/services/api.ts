@@ -147,6 +147,76 @@ class IDSSApiService {
     }
   }
 
+  async applyFilters(sessionId: string, filters: Record<string, unknown>): Promise<{
+    session_id: string;
+    filters: Record<string, unknown>;
+    vehicles: Record<string, unknown>[];
+    total: number;
+  }> {
+    try {
+      if (!sessionId) {
+        throw new Error('No session ID available');
+      }
+
+      const url = API_BASE_URL ? `${API_BASE_URL}/session/${sessionId}/filters` : `/api/session/${sessionId}/filters`;
+      console.log('Applying filters to:', url);
+      console.log('Filters:', filters);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ filters }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error applying filters:', error);
+      throw error;
+    }
+  }
+
+  async clearFilters(sessionId: string): Promise<{
+    session_id: string;
+    filters: Record<string, unknown>;
+    vehicles: Record<string, unknown>[];
+    total: number;
+  }> {
+    try {
+      if (!sessionId) {
+        throw new Error('No session ID available');
+      }
+
+      const url = API_BASE_URL ? `${API_BASE_URL}/session/${sessionId}/filters` : `/api/session/${sessionId}/filters`;
+      console.log('Clearing filters:', url);
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error clearing filters:', error);
+      throw error;
+    }
+  }
+
   // Convert API product data to our Product type
   convertVehicle(apiVehicle: Record<string, unknown>): Product {
     const vehicle = (apiVehicle.vehicle as Record<string, unknown>) || apiVehicle;

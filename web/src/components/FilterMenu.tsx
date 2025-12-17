@@ -368,15 +368,6 @@ export default function FilterMenu({ onFilterChange, onOpenChange }: FilterMenuP
     return JSON.stringify(filters) !== JSON.stringify(lastAppliedFilters);
   }, [filters, lastAppliedFilters]);
 
-  const getActiveFilterCount = useCallback(() => {
-    let count = 0;
-    Object.entries(filters).forEach(([key, value]) => {
-      if (key === 'partType' && value !== null) count++;
-      else if (Array.isArray(value) && value.length > 0) count += value.length;
-    });
-    return count;
-  }, [filters]);
-
   // Filter section component
   const FilterSection = ({ 
     title, 
@@ -452,15 +443,10 @@ export default function FilterMenu({ onFilterChange, onOpenChange }: FilterMenuP
         onClick={() => setIsOpen(!isOpen)}
         className="fixed top-6 left-6 z-50 w-14 h-14 bg-white rounded-xl border border-[#8b959e]/40 flex items-center justify-center hover:border-[#8b959e] hover:shadow-md transition-all duration-200 shadow-sm"
       >
-        <div className="flex flex-col space-y-1.5 relative">
+        <div className="flex flex-col space-y-1.5">
           <div className="w-6 h-0.5 bg-[#750013] rounded"></div>
           <div className="w-6 h-0.5 bg-[#750013] rounded"></div>
           <div className="w-6 h-0.5 bg-[#750013] rounded"></div>
-          {getActiveFilterCount() > 0 && (
-            <span className="absolute -top-2 -right-3 w-5 h-5 bg-[#750013] text-white text-xs rounded-full flex items-center justify-center font-bold">
-              {getActiveFilterCount()}
-            </span>
-          )}
         </div>
       </button>
 

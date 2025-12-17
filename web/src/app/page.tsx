@@ -463,91 +463,33 @@ export default function Home() {
 
   const handleFilterChange = async (filters: Record<string, unknown>) => {
     setCurrentFilters(filters);
-    
-    // Build a human-readable filter message
-    const filterParts: string[] = [];
-    
-    // Part type
-    if (filters.part_type) {
-      filterParts.push(`category: ${filters.part_type}`);
-    }
-    
-    // GPU filters
-    if (filters.gpu_brand) filterParts.push(`GPU brand: ${filters.gpu_brand}`);
-    if (filters.gpu_series) filterParts.push(`GPU model/series: ${filters.gpu_series}`);
-    if (filters.vram) filterParts.push(`VRAM: ${filters.vram}`);
-    if (filters.target_resolution) filterParts.push(`target resolution: ${filters.target_resolution}`);
-    if (filters.ray_tracing) filterParts.push(`ray tracing support: yes`);
-    if (filters.upscaling_support) filterParts.push(`upscaling: ${filters.upscaling_support}`);
-    if (filters.gpu_performance_tier) filterParts.push(`GPU tier: ${filters.gpu_performance_tier}`);
-    
-    // CPU filters
-    if (filters.cpu_brand) filterParts.push(`CPU brand: ${filters.cpu_brand}`);
-    if (filters.socket) filterParts.push(`socket: ${filters.socket}`);
-    if (filters.chipset) filterParts.push(`chipset: ${filters.chipset}`);
-    if (filters.core_count) filterParts.push(`cores: ${filters.core_count}`);
-    if (filters.thread_count) filterParts.push(`threads: ${filters.thread_count}`);
-    if (filters.cpu_performance_tier) filterParts.push(`CPU tier: ${filters.cpu_performance_tier}`);
-    if (filters.primary_use_case) filterParts.push(`use case: ${filters.primary_use_case}`);
-    if (filters.integrated_graphics) filterParts.push(`integrated graphics: yes`);
-    if (filters.overclocking_support) filterParts.push(`overclocking support: yes`);
-    
-    // Motherboard filters
-    if (filters.form_factor) filterParts.push(`form factor: ${filters.form_factor}`);
-    if (filters.ram_standard) filterParts.push(`memory type: ${filters.ram_standard}`);
-    if (filters.m2_slots) filterParts.push(`M.2 slots: ${filters.m2_slots}`);
-    if (filters.pcie_version) filterParts.push(`PCIe version: ${filters.pcie_version}`);
-    if (filters.wifi) filterParts.push(`Wi-Fi: yes`);
-    if (filters.vrm_tier) filterParts.push(`VRM tier: ${filters.vrm_tier}`);
-    
-    // Common filters
-    if (filters.price_min || filters.price_max) {
-      filterParts.push(`price range: $${filters.price_min || 0}-$${filters.price_max || ''}`);
-    } else if (filters.price) {
-      filterParts.push(`price range: ${filters.price}`);
-    }
-    if (filters.condition) filterParts.push(`condition: ${filters.condition}`);
-    
-    // Create a natural language message
-    let filterMessage: string;
-    if (filterParts.length === 0) {
-      filterMessage = "Show me all PC components";
-    } else {
-      filterMessage = `Find me ${filters.part_type || 'PC components'} with: ${filterParts.join(', ')}`;
-    }
-    
     setIsLoading(true);
-    start(); // Start verbose loading
 
     try {
-      // Send filter request to streaming endpoint
-      const response = await fetch('/api/chat/stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: filterMessage,
-          session_id: sessionId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Unknown error'}`);
+      // Ensure we have a session ID - create one if needed by sending a quick init
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        // Initialize session by sending a simple message
+        const initResponse = await fetch('/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Hello' }),
+        });
+        const initData = await handleStreamingResponse(initResponse);
+        if (initData?.session_id) {
+          currentSessionId = initData.session_id;
+          setSessionId(currentSessionId);
+        }
       }
 
-      // Handle streaming response
-      const data = await handleStreamingResponse(response);
-      
-      if (!data) {
-        throw new Error('No data received from streaming response');
+      if (!currentSessionId) {
+        throw new Error('Could not establish session');
       }
+
+      // Apply filters directly via the filters API
+      const data = await idssApiService.applyFilters(currentSessionId, filters);
       
-      // Update session ID
-      if (data.session_id) {
-        setSessionId(data.session_id);
-      }
+      console.log('Filters applied successfully:', data);
 
       // Update products - convert API format to our format
       if (data.vehicles && data.vehicles.length > 0) {
@@ -556,6 +498,8 @@ export default function Home() {
         });
         setProducts(convertedProducts);
         setHasReceivedRecommendations(true);
+      } else {
+        setProducts([]);
       }
 
     } catch (error) {
@@ -571,7 +515,6 @@ export default function Home() {
       setChatMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-      stop(); // Stop verbose loading
     }
   };
 

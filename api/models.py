@@ -86,3 +86,16 @@ class FavoriteRequest(BaseModel):
     """Request model when user favorites/unfavorites a product."""
     vehicle: Dict[str, Any] = Field(description="Full product object that was favorited (field name kept as 'vehicle' for API compatibility)")
     is_favorited: bool = Field(description="True if favorited, False if unfavorited")
+
+
+class FiltersRequest(BaseModel):
+    """Request model for applying filters directly to session state."""
+    filters: Dict[str, Any] = Field(description="Filter key-value pairs to apply")
+
+
+class FiltersResponse(BaseModel):
+    """Response model after applying filters."""
+    session_id: str
+    filters: Dict[str, Any]
+    vehicles: List[Dict[str, Any]]  # Updated product list based on new filters
+    total: int  # Total number of products found
