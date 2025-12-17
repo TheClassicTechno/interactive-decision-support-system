@@ -12,13 +12,16 @@ class ProductFilters(TypedDict, total=False):
     """
     Explicit product search filters extracted from user input.
     For electronics products (PC components - GPU, CPU, Motherboard).
+    
+    NOTE: All filtering uses STRUCTURED filters that map directly to database columns.
+    Do NOT use natural language text search - use specific filter fields instead.
     """
     # Product specification filters
     brand: Optional[str]  # e.g., "AMD" or "Intel,ASUS" (comma-separated for multiple)
     year: Optional[str]  # e.g., "2022" or "2022-2024" (range format for release year)
     category: Optional[str]  # e.g., "CPU" or "GPU,Laptop" (product category/type)
-    part_type: Optional[str]  # e.g., "cpu", "gpu", "motherboard" (specific part type)
-    series: Optional[str]  # e.g., "Ryzen 7" or "Core i7" (product series)
+    part_type: Optional[str]  # e.g., "cpu", "gpu", "motherboard" (specific part type, lowercase)
+    series: Optional[str]  # Specific model/series e.g., "RTX 4070 Ti", "Ryzen 7 7800X3D"
     
     # Product attributes
     features: Optional[List[str]]  # e.g., ["Wi-Fi 6E", "PCIe Gen4", "RGB lighting"]
@@ -116,12 +119,13 @@ class ImplicitPreferences(TypedDict, total=False):
 
 class ProductFiltersPydantic(BaseModel):
     """Pydantic version of ProductFilters for LLM structured output."""
+    
     # Product specification filters
     brand: Optional[str] = Field(None, description="e.g., 'AMD' or 'Intel,ASUS' (comma-separated for multiple brands)")
     year: Optional[str] = Field(None, description="e.g., '2022' or '2022-2024' (range format for release year)")
     category: Optional[str] = Field(None, description="e.g., 'CPU' or 'GPU,Laptop' (product category/type)")
-    part_type: Optional[str] = Field(None, description="e.g., 'cpu', 'gpu', 'motherboard' (specific part type)")
-    series: Optional[str] = Field(None, description="e.g., 'Ryzen 7' or 'Core i7' (product series)")
+    part_type: Optional[str] = Field(None, description="e.g., 'cpu', 'gpu', 'motherboard' (specific part type, lowercase)")
+    series: Optional[str] = Field(None, description="Specific product model/series for targeted searches. e.g., 'RTX 4070 Ti', 'Ryzen 7 7800X3D', 'Core i7-14700K'")
     
     # Product attributes
     features: Optional[List[str]] = Field(None, description="e.g., ['Wi-Fi 6E', 'PCIe Gen4', 'RGB lighting']")
@@ -333,9 +337,7 @@ class ProductSearchState(TypedDict):
     conversation_history: Annotated[List[BaseMessage], add_messages]
     implicit_preferences: ImplicitPreferences
 
-    # User location (from browser geolocation) - optional, not used for electronics
-    user_latitude: Optional[float]  # User's latitude (optional)
-    user_longitude: Optional[float]  # User's longitude (optional)
+
 
     # Results (up to MAX_RECOMMENDED_PRODUCTS products, updated each turn)
     recommended_products: List[Dict[str, Any]]

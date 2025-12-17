@@ -241,7 +241,11 @@ class LocalElectronicsStore:
                    wattage, certification, modularity, atx_version, noise,
                    supports_pcie5_power, storage, capacity, storage_type,
                    cooling_type, tdp_support, created_at, updated_at, raw_name,
-                   imageurl, performance_tier
+                   imageurl, performance_tier,
+                   recommended_psu, target_resolution, ray_tracing,
+                   upscaling_support, card_length, slot_thickness,
+                   video_encoder, display_outputs,
+                   core_count, thread_count, integrated_graphics, m2_slots, wifi
             FROM {self._table_name}
         """
         conditions: List[str] = []
@@ -496,7 +500,12 @@ class LocalElectronicsStore:
                         "interface", "power_connector", "chipset", "form_factor",
                         "wattage", "certification", "modularity", "atx_version", "noise",
                         "supports_pcie5_power", "storage", "capacity", "storage_type",
-                        "cooling_type", "tdp_support", "performance_tier"]:
+                        "cooling_type", "tdp_support", "performance_tier",
+                        "recommended_psu", "target_resolution", "ray_tracing",
+                        "upscaling_support", "card_length", "slot_thickness",
+                        "video_encoder", "display_outputs",
+                        "core_count", "thread_count", "integrated_graphics",
+                        "m2_slots", "wifi", "architecture"]:
                 value = get_row_value(attr)
                 if value is not None:
                     attributes[attr] = value
@@ -591,7 +600,11 @@ class LocalElectronicsStore:
                    wattage, certification, modularity, atx_version, noise,
                    supports_pcie5_power, storage, capacity, storage_type,
                    cooling_type, tdp_support, created_at, updated_at, raw_name,
-                   imageurl, performance_tier
+                   imageurl, performance_tier,
+                   recommended_psu, target_resolution, ray_tracing,
+                   upscaling_support, card_length, slot_thickness,
+                   video_encoder, display_outputs,
+                   core_count, thread_count, integrated_graphics, m2_slots, wifi
             FROM {self._table_name}
             WHERE product_id = ? OR id = ?
             LIMIT 1

@@ -1,12 +1,12 @@
 'use client';
 
-import { Product } from '@/types/vehicle';
+import { Product } from '@/types/product';
 interface ItemGridProps {
-  vehicles: Product[];
+  products: Product[];
   onItemSelect: (item: Product) => void;
 }
 
-export default function ItemGrid({ vehicles, onItemSelect }: ItemGridProps) {
+export default function ItemGrid({ products, onItemSelect }: ItemGridProps) {
   return (
     <div className="h-full bg-stone-50">
       <div className="mb-6">
@@ -14,11 +14,11 @@ export default function ItemGrid({ vehicles, onItemSelect }: ItemGridProps) {
           Recommended Items
         </h2>
         <p className="text-stone-600">
-          {vehicles.length} items found based on your preferences
+          {products.length} items found based on your preferences
         </p>
       </div>
 
-      {vehicles.length === 0 ? (
+      {products.length === 0 ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center text-stone-500">
             <h3 className="text-lg font-medium mb-2">No items found</h3>
@@ -30,10 +30,10 @@ export default function ItemGrid({ vehicles, onItemSelect }: ItemGridProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {vehicles.map((vehicle, index) => (
+          {products.map((product, index) => (
             <ItemCard 
-              key={vehicle.id || `item-${index}`} 
-              vehicle={vehicle} 
+              key={product.id || `item-${index}`} 
+              product={product} 
               onItemSelect={onItemSelect} 
             />
           ))}
@@ -44,22 +44,22 @@ export default function ItemGrid({ vehicles, onItemSelect }: ItemGridProps) {
 }
 
 interface ItemCardProps {
-  vehicle: Product;
+  product: Product;
   onItemSelect: (item: Product) => void;
 }
 
-function ItemCard({ vehicle, onItemSelect }: ItemCardProps) {
-  const displayImage = vehicle.image_url;
+function ItemCard({ product, onItemSelect }: ItemCardProps) {
+  const displayImage = product.image_url;
   const hasValidImage = displayImage && !displayImage.toLowerCase().includes('.svg');
-  const title = vehicle.title || `${vehicle.make ?? ''} ${vehicle.model ?? ''}`.trim() || 'Product';
-  const subtitleParts = [vehicle.brand, vehicle.source].filter(Boolean);
+  const title = product.title || `${product.make ?? ''} ${product.model ?? ''}`.trim() || 'Product';
+  const subtitleParts = [product.brand, product.source].filter(Boolean);
   const subtitle = subtitleParts.join(' • ');
-  const priceText = vehicle.price_text || (typeof vehicle.price === 'number' ? `$${vehicle.price.toLocaleString()}` : undefined);
-  const ratingText = vehicle.rating ? `${vehicle.rating.toFixed(1)} ★${vehicle.rating_count ? ` (${vehicle.rating_count.toLocaleString()})` : ''}` : undefined;
+  const priceText = product.price_text || (typeof product.price === 'number' ? `$${product.price.toLocaleString()}` : undefined);
+  const ratingText = product.rating ? `${product.rating.toFixed(1)} ★${product.rating_count ? ` (${product.rating_count.toLocaleString()})` : ''}` : undefined;
 
   return (
     <div
-      onClick={() => onItemSelect(vehicle)}
+      onClick={() => onItemSelect(product)}
       className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden border border-stone-200 hover:border-stone-300 hover:scale-105 transform flex flex-col h-full"
     >
       <div className="aspect-video bg-gray-200 relative">
@@ -84,7 +84,7 @@ function ItemCard({ vehicle, onItemSelect }: ItemCardProps) {
         </div>
         
         <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-xs font-medium">
-          #{vehicle.id.slice(-4)}
+          #{product.id.slice(-4)}
         </div>
       </div>
       
@@ -107,14 +107,14 @@ function ItemCard({ vehicle, onItemSelect }: ItemCardProps) {
         </div>
         
         <div className="space-y-1 text-sm text-gray-600 flex-1">
-          {vehicle.link && (
+          {product.link && (
             <div className="flex items-center">
               <span className="mr-1">🔗</span>
-              <span className="truncate">{vehicle.source || 'Retailer site'}</span>
+              <span className="truncate">{product.source || 'Retailer site'}</span>
             </div>
           )}
           {(() => {
-            const availability = vehicle.offer?.availability;
+            const availability = product.offer?.availability;
             if (!availability) return null;
             return (
               <div className="flex items-center">

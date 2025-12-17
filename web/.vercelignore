@@ -1,0 +1,33 @@
+# Ignore files that shouldn't be deployed to Vercel
+# This file is used when Vercel root is set to web/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Test files
+*.test.py
+*.spec.py
+
+# Logs
+*.log
+logs/
+sessions/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build artifacts (these are regenerated)
+.next/
+out/
+build/

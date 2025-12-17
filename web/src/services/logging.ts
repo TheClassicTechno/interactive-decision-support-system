@@ -48,7 +48,7 @@ export class LoggingService {
   /**
    * Log when user views product details
    */
-  static async logVehicleView(sessionId: string, productId: string, vin?: string): Promise<void> {
+  static async logProductView(sessionId: string, productId: string): Promise<void> {
     try {
       await this.logEvent(sessionId, 'product_view', {
         product_id: productId,
@@ -63,7 +63,7 @@ export class LoggingService {
   /**
    * Log when user clicks on a product
    */
-  static async logVehicleClick(sessionId: string, productId: string, vin?: string): Promise<void> {
+  static async logProductClick(sessionId: string, productId: string): Promise<void> {
     try {
       await this.logEvent(sessionId, 'product_click', {
         product_id: productId,

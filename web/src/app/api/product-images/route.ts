@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     console.warn('AUTODEV_API_KEY not found, returning placeholder');
     return NextResponse.json({ 
       images: [], 
-      error: 'Vehicle image service not configured' 
+      error: 'Product image service not configured' 
     });
   }
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       if (response.status === 404) {
         return NextResponse.json({ 
           images: [], 
-          message: 'No photos available for this VIN' 
+          message: 'No photos available for this product' 
         });
       }
       throw new Error(`Auto.dev API error: ${response.status}`);
@@ -64,10 +64,10 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching vehicle photos:', error);
+    console.error('Error fetching product photos:', error);
     return NextResponse.json({ 
       images: [], 
-      error: 'Failed to fetch vehicle photos' 
+      error: 'Failed to fetch product photos' 
     });
   }
 }

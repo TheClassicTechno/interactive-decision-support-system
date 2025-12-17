@@ -10,8 +10,8 @@ interface ComparisonTableProps {
 export default function ComparisonTable({ comparison }: ComparisonTableProps) {
   const { headers, rows } = comparison;
   
-  // First header is "Attribute", rest are vehicle names
-  const vehicleNames = headers.slice(1);
+  // First header is "Attribute", rest are product names
+  const productNames = headers.slice(1);
   
   // Track selected fields (default to first 4)
   const [selectedFields, setSelectedFields] = useState<string[]>(() => 
@@ -94,14 +94,14 @@ export default function ComparisonTable({ comparison }: ComparisonTableProps) {
 
       {/* Comparison Cards */}
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {vehicleNames.map((vehicleName, vehicleIdx) => (
+        {productNames.map((productName, productIdx) => (
           <div 
-            key={vehicleIdx} 
+            key={productIdx} 
             className="flex-shrink-0 w-80 bg-white rounded-xl p-4 border border-[#8b959e]/30 hover:border-[#750013] transition-all shadow-sm"
           >
-            {/* Vehicle Name Header */}
+            {/* Product Name Header */}
             <h3 className="text-xl font-bold text-black mb-4 text-center pb-3 border-b border-[#8b959e]/30">
-              {vehicleName}
+              {productName}
             </h3>
             
             {/* Attributes */}
@@ -112,7 +112,7 @@ export default function ComparisonTable({ comparison }: ComparisonTableProps) {
                     {row[0]}
                   </div>
                   <div className="text-base text-black font-semibold">
-                    {row[vehicleIdx + 1]}
+                    {row[productIdx + 1]}
                   </div>
                 </div>
               ))}

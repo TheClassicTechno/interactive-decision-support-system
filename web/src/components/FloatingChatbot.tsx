@@ -30,7 +30,7 @@ export default function FloatingChatbot({ sessionId }: FloatingChatbotProps) {
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
         role: 'assistant',
-        content: "Hi! I'm here to help you find the perfect vehicle. What are you looking for?",
+        content: "Hi! I'm here to help you find the perfect product. What are you looking for?",
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
@@ -127,7 +127,7 @@ export default function FloatingChatbot({ sessionId }: FloatingChatbotProps) {
               </svg>
             </div>
             <div>
-              <h3 className="font-bold text-sm">Vehicle Assistant</h3>
+              <h3 className="font-bold text-sm">Shopping Assistant</h3>
               <p className="text-xs text-white/80">Always here to help</p>
             </div>
           </div>

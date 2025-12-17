@@ -30,7 +30,7 @@ export interface ChatRequest {
 
 export interface ChatResponse {
   response: string;
-  vehicles: Record<string, unknown>[];
+  products: Record<string, unknown>[];
   filters: Record<string, unknown>;
   preferences: Record<string, unknown>;
   session_id: string;

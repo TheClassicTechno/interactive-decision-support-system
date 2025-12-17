@@ -1,19 +1,19 @@
 'use client';
 
-import { Product } from '@/types/vehicle';
+import { Product } from '@/types/product';
 
 interface FavoritesPageProps {
   favorites: Product[];
-  onToggleFavorite: (vehicle: Product) => void;
-  isFavorite: (vehicleId: string) => boolean;
-  onItemSelect: (vehicle: Product) => void;
+  onToggleFavorite: (product: Product) => void;
+  isFavorite: (productId: string) => boolean;
+  onItemSelect: (product: Product) => void;
   onClose: () => void;
 }
 
 export default function FavoritesPage({ favorites, onToggleFavorite, isFavorite, onItemSelect, onClose }: FavoritesPageProps) {
-  const primaryImage = (vehicle: Product) => vehicle.image_url || undefined;
-  const hasValidImage = (vehicle: Product) => {
-    const img = primaryImage(vehicle);
+  const primaryImage = (product: Product) => product.image_url || undefined;
+  const hasValidImage = (product: Product) => {
+    const img = primaryImage(product);
     return img && !img.toLowerCase().includes('.svg');
   };
 
@@ -40,22 +40,22 @@ export default function FavoritesPage({ favorites, onToggleFavorite, isFavorite,
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
             <p className="text-[#8b959e] text-base">No favorites yet</p>
-            <p className="text-[#8b959e] text-sm mt-1">Start liking vehicles to see them here</p>
+            <p className="text-[#8b959e] text-sm mt-1">Start liking products to see them here</p>
           </div>
         ) : (
           <div className="flex items-center justify-start gap-4 h-full">
-              {favorites.map((vehicle) => (
+              {favorites.map((product) => (
                 <div
-                  key={vehicle.id}
+                  key={product.id}
                   className="bg-white rounded-xl p-4 w-[250px] h-full max-h-[300px] border border-[#8b959e]/30 shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-all duration-200"
                 >
                   {/* Image */}
                   <div className="aspect-[3/2] bg-gradient-to-br from-[#750013]/30 to-white rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
-                    {hasValidImage(vehicle) ? (
+                    {hasValidImage(product) ? (
                       <>
                         <img
-                          src={primaryImage(vehicle)}
-                          alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                          src={primaryImage(product)}
+                          alt={product.title || `${product.brand ?? ''} ${product.model ?? ''}`}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
@@ -89,12 +89,12 @@ export default function FavoritesPage({ favorites, onToggleFavorite, isFavorite,
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onToggleFavorite(vehicle);
+                        onToggleFavorite(product);
                       }}
                       className="absolute top-2 left-2 w-8 h-8 bg-white border border-[#8b959e]/40 rounded-full flex items-center justify-center hover:border-[#ff1323] hover:shadow-md transition-all duration-200 z-20 shadow-sm"
                     >
                       <svg 
-                        className={`w-5 h-5 transition-all duration-200 ${isFavorite(vehicle.id) ? 'text-[#ff1323] fill-[#ff1323]' : 'text-[#8b959e]'}`}
+                        className={`w-5 h-5 transition-all duration-200 ${isFavorite(product.id) ? 'text-[#ff1323] fill-[#ff1323]' : 'text-[#8b959e]'}`}
                         fill="none" 
                         stroke="currentColor" 
                         viewBox="0 0 24 24"
@@ -107,36 +107,36 @@ export default function FavoritesPage({ favorites, onToggleFavorite, isFavorite,
                   {/* Content */}
                   <div className="space-y-2">
                     <h4 className="text-base font-bold text-black mb-1 leading-tight">
-                      {vehicle.title || `${vehicle.make ?? ''} ${vehicle.model ?? ''}`.trim() || 'Product'}
+                      {product.title || `${product.make ?? ''} ${product.model ?? ''}`.trim() || 'Product'}
                     </h4>
-                    {(vehicle.brand || vehicle.source) && (
+                    {(product.brand || product.source) && (
                       <p className="text-xs text-[#8b959e]">
-                        {[vehicle.brand, vehicle.source].filter(Boolean).join(' • ')}
+                        {[product.brand, product.source].filter(Boolean).join(' • ')}
                       </p>
                     )}
                     
                     <div className="space-y-1 text-sm">
-                      {(vehicle.price_text || vehicle.price) && (
+                      {(product.price_text || product.price) && (
                         <div className="flex justify-between border-l-4 border-l-[#750013] pl-2">
                           <span className="text-[#8b959e]">Price:</span>
                           <span className="font-bold text-black text-right max-w-[120px] truncate">
-                            {vehicle.price_text || (vehicle.price ? `$${vehicle.price.toLocaleString()}` : 'N/A')}
+                            {product.price_text || (product.price ? `$${product.price.toLocaleString()}` : 'N/A')}
                           </span>
                         </div>
                       )}
                       
-                      {vehicle.rating && (
+                      {product.rating && (
                         <div className="flex justify-between text-xs">
                           <span className="text-[#8b959e]">Rating:</span>
                           <span className="text-black text-right max-w-[120px] truncate">
-                            {vehicle.rating.toFixed(1)} ★{vehicle.rating_count ? ` (${vehicle.rating_count.toLocaleString()})` : ''}
+                            {product.rating.toFixed(1)} ★{product.rating_count ? ` (${product.rating_count.toLocaleString()})` : ''}
                           </span>
                         </div>
                       )}
                     </div>
 
                     <button 
-                      onClick={() => onItemSelect(vehicle)}
+                      onClick={() => onItemSelect(product)}
                       className="w-full bg-[#750013] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#8b1320] transition-all duration-200 shadow-sm hover:shadow-md mt-3"
                     >
                       View Details

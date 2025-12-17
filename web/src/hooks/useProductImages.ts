@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 
-interface VehicleImage {
+interface ProductImage {
   url: string;
   title?: string;
   caption?: string;
 }
 
-interface VehicleImagesResponse {
-  images: VehicleImage[];
+interface ProductImagesResponse {
+  images: ProductImage[];
   count?: number;
   error?: string;
   message?: string;
 }
 
-export function useVehicleImages(vin?: string) {
-  const [images, setImages] = useState<VehicleImage[]>([]);
+export function useProductImages(vin?: string) {
+  const [images, setImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +30,8 @@ export function useVehicleImages(vin?: string) {
       setError(null);
 
       try {
-        const response = await fetch(`/api/vehicle-images?vin=${vin}`);
-        const data: VehicleImagesResponse = await response.json();
+        const response = await fetch(`/api/product-images?vin=${vin}`);
+        const data: ProductImagesResponse = await response.json();
 
         if (data.error) {
           setError(data.error);
@@ -40,7 +40,7 @@ export function useVehicleImages(vin?: string) {
           setImages(data.images || []);
         }
       } catch (err) {
-        setError('Failed to fetch vehicle images');
+        setError('Failed to fetch product images');
         setImages([]);
       } finally {
         setLoading(false);

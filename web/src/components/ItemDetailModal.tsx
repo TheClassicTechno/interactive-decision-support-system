@@ -1,7 +1,7 @@
 'use client';
 
 import { FC } from 'react';
-import { Product } from '@/types/vehicle';
+import { Product } from '@/types/product';
 
 interface ItemDetailModalProps {
   item: Product;
@@ -52,25 +52,14 @@ const InfoRow: FC<{ label: string; value?: string | number | null }> = ({ label,
   );
 };
 
-const AttributeGrid: FC<{ attributes?: Record<string, unknown> }> = ({ attributes }) => {
-  if (!attributes) return null;
-  const entries = Object.entries(attributes)
-    .filter(([, value]) => value !== null && value !== undefined && value !== '')
-    .slice(0, 12);
-  if (entries.length === 0) return null;
-
+const SpecCard: FC<{ label: string; value?: string | number | null; suffix?: string }> = ({ label, value, suffix }) => {
+  if (!value) return null;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      {entries.map(([key, value]) => (
-        <div key={key} className="glass-card rounded-lg p-3">
-          <span className="text-xs uppercase tracking-wide text-slate-400">
-            {key.replace(/_/g, ' ')}
-          </span>
-          <div className="font-medium text-slate-100 mt-1">
-            {typeof value === 'number' ? value.toLocaleString() : String(value)}
-          </div>
-        </div>
-      ))}
+    <div className="glass-card rounded-lg p-3">
+      <span className="text-xs uppercase tracking-wide text-slate-400">{label}</span>
+      <div className="font-medium text-slate-100 mt-1">
+        {typeof value === 'number' ? value.toLocaleString() : value}{suffix || ''}
+      </div>
     </div>
   );
 };
@@ -84,6 +73,11 @@ const formatPrice = (item: Product) => {
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// Get product type from various possible fields
+const getProductType = (item: Product): string | undefined => {
+  return item.category || item.part_type || undefined;
+};
+
 export default function ItemDetailModal({ item, onClose }: ItemDetailModalProps) {
   const rawTitle = item.title || `${item.make ?? ''} ${item.model ?? ''}`.trim() || 'Product details';
   const cleanedTitle = item.source
@@ -94,13 +88,13 @@ export default function ItemDetailModal({ item, onClose }: ItemDetailModalProps)
     : rawTitle;
   const title = cleanedTitle;
 
-  const subtitleParts = [item.brand].filter(Boolean);
+  const subtitleParts = [item.brand, item.series].filter(Boolean);
   const subtitle = subtitleParts.join(' • ');
   const ratingText = item.rating
     ? `${item.rating.toFixed(1)} ★${item.rating_count ? ` (${item.rating_count.toLocaleString()} reviews)` : ''}`
     : undefined;
 
-  const productAttributes = (item.product?.attributes as Record<string, unknown>) || undefined;
+  const productType = getProductType(item);
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex items-center justify-center p-4 z-50">
@@ -128,30 +122,142 @@ export default function ItemDetailModal({ item, onClose }: ItemDetailModalProps)
               <div className="glass-card rounded-xl p-4 space-y-2">
                 <div className="text-3xl font-bold text-rose-400">{formatPrice(item)}</div>
                 <InfoRow label="Retailer" value={item.source || 'N/A'} />
-                <InfoRow label="Product ID" value={item.product?.identifier as string} />
-                <InfoRow label="Offer URL" value={item.link} />
-                <InfoRow label="Availability" value={item.offer?.availability as string} />
-                <InfoRow label="Condition" value={item.offer?.condition as string} />
+                {productType && <InfoRow label="Type" value={productType} />}
+                <InfoRow label="Year" value={item.year} />
                 <InfoRow label="Rating" value={ratingText} />
+                {item.link && <InfoRow label="Link" value="View on retailer site" />}
               </div>
             </div>
 
             <div className="space-y-4">
+              {/* Product Overview */}
               <div className="glass-card rounded-xl p-4 space-y-3">
                 <h3 className="text-lg font-semibold text-slate-100">Product Overview</h3>
                 <InfoRow label="Brand" value={item.brand} />
                 <InfoRow label="Model" value={item.model} />
-                <InfoRow label="Year" value={item.year || '—'} />
-                <InfoRow label="Price (numeric)" value={item.price_value} />
-                <InfoRow label="Currency" value={item.price_currency} />
-                <InfoRow label="Retailer" value={item.source} />
+                <InfoRow label="Series" value={item.series} />
               </div>
 
-              <div className="glass-card rounded-xl p-4 space-y-3">
-                <h3 className="text-lg font-semibold text-slate-100">Key Specifications</h3>
-                <AttributeGrid attributes={productAttributes} />
-              </div>
+              {/* GPU Specifications */}
+              {(productType === 'gpu' || item.vram) && (
+                <div className="glass-card rounded-xl p-4 space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-100">GPU Specifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SpecCard label="VRAM" value={item.vram} suffix=" GB" />
+                    <SpecCard label="Memory Type" value={item.memory_type} />
+                    <SpecCard label="Performance Tier" value={item.performance_tier} />
+                    <SpecCard label="Target Resolution" value={item.target_resolution} />
+                    <SpecCard label="Recommended PSU" value={item.recommended_psu} suffix="W" />
+                    <SpecCard label="Power Connector" value={item.power_connector} />
+                    <SpecCard label="Card Length" value={item.card_length} />
+                    <SpecCard label="Slot Thickness" value={item.slot_thickness} />
+                    <SpecCard label="Cooler Type" value={item.cooler_type} />
+                    <SpecCard label="Ray Tracing" value={item.ray_tracing} />
+                    <SpecCard label="Upscaling" value={item.upscaling_support} />
+                    <SpecCard label="Display Outputs" value={item.display_outputs} />
+                    <SpecCard label="Video Encoder" value={item.video_encoder} />
+                    <SpecCard label="Interface" value={item.interface} />
+                    <SpecCard label="Variant" value={item.variant} />
+                  </div>
+                </div>
+              )}
 
+              {/* CPU Specifications */}
+              {(productType === 'cpu' || item.core_count) && (
+                <div className="glass-card rounded-xl p-4 space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-100">CPU Specifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SpecCard label="Cores" value={item.core_count} />
+                    <SpecCard label="Threads" value={item.thread_count} />
+                    <SpecCard label="Socket" value={item.socket} />
+                    <SpecCard label="Architecture" value={item.architecture} />
+                    <SpecCard label="TDP" value={item.tdp} suffix="W" />
+                    <SpecCard label="Integrated Graphics" value={item.integrated_graphics} />
+                    <SpecCard label="PCIe Version" value={item.pcie_version} />
+                    <SpecCard label="RAM Support" value={item.ram_standard} />
+                  </div>
+                </div>
+              )}
+
+              {/* Motherboard Specifications */}
+              {(productType === 'motherboard' || item.chipset) && (
+                <div className="glass-card rounded-xl p-4 space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-100">Motherboard Specifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SpecCard label="Chipset" value={item.chipset} />
+                    <SpecCard label="Socket" value={item.socket} />
+                    <SpecCard label="Form Factor" value={item.form_factor} />
+                    <SpecCard label="RAM Standard" value={item.ram_standard} />
+                    <SpecCard label="M.2 Slots" value={item.m2_slots} />
+                    <SpecCard label="WiFi" value={item.wifi} />
+                    <SpecCard label="PCIe Version" value={item.pcie_version} />
+                  </div>
+                </div>
+              )}
+
+              {/* PSU Specifications */}
+              {(productType === 'psu' || item.wattage) && (
+                <div className="glass-card rounded-xl p-4 space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-100">PSU Specifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SpecCard label="Wattage" value={item.wattage} suffix="W" />
+                    <SpecCard label="Certification" value={item.certification} />
+                    <SpecCard label="Modularity" value={item.modularity} />
+                    <SpecCard label="ATX Version" value={item.atx_version} />
+                    <SpecCard label="Noise Level" value={item.noise} suffix=" dB" />
+                    <SpecCard label="PCIe 5.0 Power" value={item.supports_pcie5_power === 'true' ? 'Yes' : item.supports_pcie5_power === 'false' ? 'No' : item.supports_pcie5_power} />
+                  </div>
+                </div>
+              )}
+
+              {/* Storage Specifications */}
+              {(productType === 'storage' || item.storage_type) && (
+                <div className="glass-card rounded-xl p-4 space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-100">Storage Specifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SpecCard label="Capacity" value={item.capacity} />
+                    <SpecCard label="Storage Type" value={item.storage_type} />
+                    <SpecCard label="Interface" value={item.interface} />
+                  </div>
+                </div>
+              )}
+
+              {/* Cooling Specifications */}
+              {(productType === 'cooling' || item.cooling_type) && (
+                <div className="glass-card rounded-xl p-4 space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-100">Cooling Specifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SpecCard label="Cooling Type" value={item.cooling_type} />
+                    <SpecCard label="TDP Support" value={item.tdp_support} suffix="W" />
+                    <SpecCard label="Socket Compatibility" value={item.socket} />
+                  </div>
+                </div>
+              )}
+
+              {/* RAM Specifications */}
+              {productType === 'ram' && (
+                <div className="glass-card rounded-xl p-4 space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-100">RAM Specifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SpecCard label="Capacity" value={item.capacity} />
+                    <SpecCard label="RAM Type" value={item.ram_standard} />
+                    <SpecCard label="Form Factor" value={item.form_factor} />
+                  </div>
+                </div>
+              )}
+
+              {/* Case Specifications */}
+              {productType === 'case' && (
+                <div className="glass-card rounded-xl p-4 space-y-3">
+                  <h3 className="text-lg font-semibold text-slate-100">Case Specifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <SpecCard label="Form Factor" value={item.form_factor} />
+                    <SpecCard label="Drive Bays" value={item.storage} />
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
               {item.description && (
                 <div className="glass-card rounded-xl p-4">
                   <h3 className="text-lg font-semibold text-slate-100 mb-2">Description</h3>

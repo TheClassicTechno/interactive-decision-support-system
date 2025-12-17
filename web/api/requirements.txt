@@ -1,34 +1,35 @@
+# Python dependencies for Vercel serverless functions
+# This is a duplicate of web/requirements.txt for compatibility
+
+# API and HTTP
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.0.0
+mangum>=0.17.0
+
 # LangGraph and LangChain dependencies
 langgraph>=0.2.0
 langchain>=0.3.0
 langchain-core>=0.3.0
-langchain-openai>=0.2.0  # For OpenAI models
-langchain-anthropic>=0.2.0  # For Anthropic models (optional)
-langchain-community>=0.3.0  # For SQL database tools
+langchain-openai>=0.2.0
+langchain-anthropic>=0.2.0
+langchain-community>=0.3.0
 
 # Database
-sqlalchemy>=2.0.0  # For SQL database operations
-neo4j>=5.20.0  # For Neo4j knowledge graphs
+sqlalchemy>=2.0.0
+neo4j>=5.20.0
 
-# API and HTTP
+# HTTP and parsing
 requests>=2.31.0
 beautifulsoup4>=4.12.0
-fastapi>=0.104.0
-uvicorn>=0.24.0
-pydantic>=2.0.0
-sse-starlette>=1.6.0  # For Server-Sent Events (streaming progress updates)
-mangum>=0.17.0  # For Vercel serverless function compatibility
+sse-starlette>=1.6.0
 
-# Python typing extensions
-typing-extensions>=4.8.0
-
-# Environment variables
+# Environment and config
 python-dotenv>=1.0.0
+typing-extensions>=4.8.0
+PyYAML>=6.0.0
+Jinja2>=3.1.0
 
-# Configuration and templating
-PyYAML>=6.0.0  # For YAML configuration files
-Jinja2>=3.1.0  # For prompt templating
-
-# PDF parsing (for scraping manufacturer documentation)
-pdfplumber>=0.10.0  # Preferred PDF parser (better text extraction)
-PyPDF2>=3.0.0  # Fallback PDF parser
+# PDF parsing
+pdfplumber>=0.10.0
+PyPDF2>=3.0.0

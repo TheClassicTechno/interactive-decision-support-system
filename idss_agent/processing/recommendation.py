@@ -19,56 +19,25 @@ logger = get_logger("components.recommendation")
 DEFAULT_COUNTRY = "us"
 
 
-def _build_search_query(filters: Dict[str, Any], implicit: Dict[str, Any], exclude_category: bool = False) -> str:
-    """Create a keyword query for database search from filters and preferences.
-    
-    Args:
-        filters: Explicit filter dictionary
-        implicit: Implicit preferences dictionary  
-        exclude_category: If True, don't include category/part_type as search keywords
-                         (useful when part_type is already used as a filter)
-    """
+def _build_search_payload(
+    filters: Dict[str, Any], implicit: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Prepare parameters for the local database search (legacy function, kept for compatibility)."""
 
-    keywords: List[str] = []
+    price_bounds = _extract_price_bounds(filters)
 
-    # Keys that are actual search terms (not category-type filters)
-    search_keys = [
-        "search_query",
-        "query",
-        "keywords",
-        "product",
-        "product_name",
-    ]
-    
-    # Only include category if not excluded (when part_type filter is already applied)
-    if not exclude_category:
-        search_keys.extend(["category", "subcategory"])
-    
-    for key in search_keys:
-        value = filters.get(key)
-        if value:
-            keywords.append(str(value))
+    payload: Dict[str, Any] = {
+        "query": None,  # No text search - use structured filters only
+        "page": int(filters.get("page", 1) or 1),
+        "country": filters.get("country") or DEFAULT_COUNTRY,
+        "language": filters.get("language"),
+        "sort_by": filters.get("sort_by") or filters.get("sort"),
+        "min_price": price_bounds["min_price"],
+        "max_price": price_bounds["max_price"],
+        "seller": filters.get("seller") or filters.get("retailer"),
+    }
 
-    brand_affinity = implicit.get("brand_affinity")
-    if isinstance(brand_affinity, list):
-        keywords.extend(brand_affinity)
-
-    if not keywords and implicit.get("priorities"):
-        priorities = implicit["priorities"]
-        if isinstance(priorities, list):
-            keywords.extend(priorities)
-
-    # Remove duplicates while keeping order
-    deduped: List[str] = []
-    seen: set[str] = set()
-    for word in keywords:
-        normalized = word.strip()
-        if not normalized or normalized.lower() in seen:
-            continue
-        deduped.append(normalized)
-        seen.add(normalized.lower())
-
-    return " ".join(deduped) if deduped else "electronics"
+    return payload
 
 
 def _extract_price_bounds(filters: Dict[str, Any]) -> Dict[str, Optional[float]]:
@@ -663,17 +632,15 @@ def update_recommendation_list(
     if part_type:
         part_type = part_type.lower().strip()
     
-    # Build search parameters - exclude category from text search if part_type is already set
-    # This prevents redundant searches like "WHERE raw_name LIKE '%GPU%' AND product_type = 'gpu'"
-    search_query = _build_search_query(filters, implicit, exclude_category=bool(part_type))
+    # Extract price bounds
     price_bounds = _extract_price_bounds(filters)
     
     # Extract brand from filters
     brand = filters.get("brand")
     
-    # Don't search for generic "electronics" query
-    if search_query == "electronics":
-        search_query = None
+    # Extract series for model-specific searches (e.g., "RTX 4070", "Ryzen 7 7800X3D")
+    # This is the ONLY text-based filter - used for specific product model matching
+    series = filters.get("series") or filters.get("product_name")
 
     # Determine if this is a PC part query - use Neo4j if so
     is_pc_part_query = part_type and is_pc_part(part_type)
@@ -682,8 +649,8 @@ def update_recommendation_list(
     
     if is_pc_part_query:
         # Use Neo4j knowledge graph for PC parts
-        logger.info("Using Neo4j knowledge graph for PC parts search: part_type=%s, brand=%s, price_range=%s-%s",
-                    part_type, brand, price_bounds["min_price"], price_bounds["max_price"])
+        logger.info("Using Neo4j knowledge graph for PC parts search: part_type=%s, brand=%s, series=%s, price_range=%s-%s",
+                    part_type, brand, series, price_bounds["min_price"], price_bounds["max_price"])
         
         try:
             kg_tool = get_compatibility_tool()
@@ -693,7 +660,7 @@ def update_recommendation_list(
                     brand=brand,
                     min_price=price_bounds["min_price"],
                     max_price=price_bounds["max_price"],
-                    query=search_query,
+                    query=None,  # No text search - use structured filters only
                     socket=filters.get("socket"),
                     vram=filters.get("vram"),
                     capacity=filters.get("capacity"),
@@ -765,13 +732,13 @@ def update_recommendation_list(
     
     if not is_pc_part_query or not products:
         # Use local database for non-PC parts or as fallback
-        logger.info("Using local database search: query=%s, part_type=%s, brand=%s, price_range=%s-%s",
-                    search_query, part_type, brand, price_bounds["min_price"], price_bounds["max_price"])
+        logger.info("Using local database search: part_type=%s, brand=%s, series=%s, price_range=%s-%s",
+                    part_type, brand, series, price_bounds["min_price"], price_bounds["max_price"])
 
         try:
             store = LocalElectronicsStore()
             db_products = store.search_products(
-                query=search_query,
+                query=None,  # No text search - use structured filters only
                 part_type=part_type,
                 brand=brand,
                 min_price=price_bounds["min_price"],

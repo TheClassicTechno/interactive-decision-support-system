@@ -1,20 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Product } from '@/types/vehicle';
+import { Product } from '@/types/product';
 
 interface RecommendationCarouselProps {
-  vehicles: Product[];
-  onItemSelect?: (vehicle: Product) => void;
+  products: Product[];
+  onItemSelect?: (product: Product) => void;
   showPlaceholders?: boolean;
-  onToggleFavorite?: (vehicle: Product) => void;
-  isFavorite?: (vehicleId: string) => boolean;
+  onToggleFavorite?: (product: Product) => void;
+  isFavorite?: (productId: string) => boolean;
   currentIndex?: number;
   onIndexChange?: (index: number) => void;
 }
 
 interface ViewTimeData {
-  vehicleId: string;
+  productId: string;
   startTime: number;
   totalTime: number;
 }
@@ -24,13 +24,13 @@ type DisplayCard = {
   isCenter: boolean;
   isPlaceholder: true;
 } | {
-  vehicle: Product;
+  product: Product;
   position: number;
   isCenter: boolean;
   isPlaceholder: false;
 };
 
-export default function RecommendationCarousel({ vehicles, onItemSelect, showPlaceholders = false, onToggleFavorite, isFavorite, currentIndex: controlledIndex, onIndexChange }: RecommendationCarouselProps) {
+export default function RecommendationCarousel({ products, onItemSelect, showPlaceholders = false, onToggleFavorite, isFavorite, currentIndex: controlledIndex, onIndexChange }: RecommendationCarouselProps) {
   const [internalIndex, setInternalIndex] = useState(0);
   const currentIndex = controlledIndex !== undefined ? controlledIndex : internalIndex;
   const setCurrentIndex = (index: number) => {
@@ -46,19 +46,19 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
   const startTimeRef = useRef<number>(Date.now());
   const isIdleRef = useRef<boolean>(false);
 
-  // Reset to first item when new vehicles are loaded (only if not controlled externally)
+  // Reset to first item when new products are loaded (only if not controlled externally)
   useEffect(() => {
-    if (vehicles.length > 0 && controlledIndex === undefined) {
+    if (products.length > 0 && controlledIndex === undefined) {
       setCurrentIndex(0);
     }
-  }, [vehicles, controlledIndex]);
+  }, [products, controlledIndex]);
 
-  // Track viewing time for each vehicle
+  // Track viewing time for each product
   useEffect(() => {
-    if (vehicles.length === 0) return;
+    if (products.length === 0) return;
 
-    const currentVehicle = vehicles[currentIndex];
-    if (!currentVehicle) return;
+    const currentProduct = products[currentIndex];
+    if (!currentProduct) return;
 
     startTimeRef.current = Date.now();
 
@@ -86,7 +86,7 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
     // Check for idle every 5 seconds
     const idleInterval = setInterval(checkIdle, 5000);
 
-    // Cleanup function to save time when component unmounts or vehicle changes
+    // Cleanup function to save time when component unmounts or product changes
     return () => {
       const endTime = Date.now();
       const viewDuration = endTime - startTimeRef.current;
@@ -95,11 +95,11 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
       if (!isIdleRef.current && viewDuration > 1000) { // At least 1 second of active viewing
         setViewTimes(prev => ({
           ...prev,
-          [currentVehicle.id]: (prev[currentVehicle.id] || 0) + viewDuration
+          [currentProduct.id]: (prev[currentProduct.id] || 0) + viewDuration
         }));
 
         // Send tracking data to analytics endpoint (you can implement this)
-        console.log(`User viewed ${currentVehicle.make} ${currentVehicle.model} for ${viewDuration}ms`);
+        console.log(`User viewed ${currentProduct.title || currentProduct.model} for ${viewDuration}ms`);
       }
 
       // Remove event listeners
@@ -108,14 +108,14 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
       });
       clearInterval(idleInterval);
     };
-  }, [currentIndex, vehicles]);
+  }, [currentIndex, products]);
 
-  const nextVehicle = () => {
-    if (vehicles.length === 0 || isAnimating) return;
+  const nextProduct = () => {
+    if (products.length === 0 || isAnimating) return;
     
     setIsAnimating(true);
     setAnimationDirection('right');
-    const newIndex = (currentIndex + 1) % vehicles.length;
+    const newIndex = (currentIndex + 1) % products.length;
     setCurrentIndex(newIndex);
     
     setTimeout(() => {
@@ -124,12 +124,12 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
     }, 500);
   };
 
-  const prevVehicle = () => {
-    if (vehicles.length === 0 || isAnimating) return;
+  const prevProduct = () => {
+    if (products.length === 0 || isAnimating) return;
     
     setIsAnimating(true);
     setAnimationDirection('left');
-    const newIndex = (currentIndex - 1 + vehicles.length) % vehicles.length;
+    const newIndex = (currentIndex - 1 + products.length) % products.length;
     setCurrentIndex(newIndex);
     
     setTimeout(() => {
@@ -139,7 +139,7 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
   };
 
   // Use the showPlaceholders prop to determine if we should show placeholder cards
-  const currentVehicle = !showPlaceholders ? vehicles[currentIndex] : null;
+  const currentProduct = !showPlaceholders ? products[currentIndex] : null;
 
   // Get the 3 cards to display (current, next, previous)
   const getDisplayCards = (): DisplayCard[] => {
@@ -154,9 +154,9 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
     
     const cards: DisplayCard[] = [];
     for (let i = -1; i <= 1; i++) {
-      const index = (currentIndex + i + vehicles.length) % vehicles.length;
+      const index = (currentIndex + i + products.length) % products.length;
       cards.push({
-        vehicle: vehicles[index],
+        product: products[index],
         position: i,
         isCenter: i === 0,
         isPlaceholder: false
@@ -173,8 +173,8 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
       <div className="relative flex items-center justify-center flex-1 overflow-hidden">
         {/* Left Arrow */}
         <button
-          onClick={prevVehicle}
-          disabled={isAnimating || vehicles.length <= 1 || showPlaceholders}
+          onClick={prevProduct}
+          disabled={isAnimating || products.length <= 1 || showPlaceholders}
           className="absolute left-0 z-10 w-12 h-12 rounded-full bg-white border border-[#8b959e]/40 flex items-center justify-center hover:bg-[#8b959e]/5 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
         >
           <svg className="w-6 h-6 text-[#750013]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +186,7 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
         <div className="flex items-center justify-center space-x-4">
           {displayCards.map((card, idx) => (
             <div
-              key={card.isPlaceholder ? `placeholder-${idx}` : `${card.vehicle.id}-${idx}`}
+              key={card.isPlaceholder ? `placeholder-${idx}` : `${card.product.id}-${idx}`}
               className={`transition-all duration-500 ease-out ${
                 card.isCenter
                   ? 'transform rotate-0 translate-x-0 scale-100 z-10'
@@ -234,10 +234,10 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
                   </>
         ) : (
           /* Real Item Card Content */
-          <VehicleCard 
-            vehicle={card.vehicle} 
+          <ProductCard 
+            product={card.product} 
             onItemSelect={onItemSelect} 
-            index={(currentIndex + card.position + vehicles.length) % vehicles.length + 1}
+            index={(currentIndex + card.position + products.length) % products.length + 1}
             isCenter={card.isCenter}
             onToggleFavorite={onToggleFavorite}
             isFavorite={isFavorite}
@@ -250,8 +250,8 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
 
         {/* Right Arrow */}
         <button
-          onClick={nextVehicle}
-          disabled={isAnimating || vehicles.length <= 1 || showPlaceholders}
+          onClick={nextProduct}
+          disabled={isAnimating || products.length <= 1 || showPlaceholders}
           className="absolute right-0 z-10 w-12 h-12 rounded-full bg-white border border-[#8b959e]/40 flex items-center justify-center hover:bg-[#8b959e]/5 transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
         >
           <svg className="w-6 h-6 text-[#750013]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,26 +263,26 @@ export default function RecommendationCarousel({ vehicles, onItemSelect, showPla
   );
 }
 
-// VehicleCard component
-function VehicleCard({ vehicle, onItemSelect, index, onToggleFavorite, isFavorite }: { 
-  vehicle: Product; 
-  onItemSelect?: (vehicle: Product) => void;
+// ProductCard component
+function ProductCard({ product, onItemSelect, index, onToggleFavorite, isFavorite }: { 
+  product: Product; 
+  onItemSelect?: (product: Product) => void;
   index?: number;
   isCenter?: boolean;
-  onToggleFavorite?: (vehicle: Product) => void;
-  isFavorite?: (vehicleId: string) => boolean;
+  onToggleFavorite?: (product: Product) => void;
+  isFavorite?: (productId: string) => boolean;
 }) {
-  const primaryImage = vehicle.image_url;
+  const primaryImage = product.image_url;
   const hasValidImage = primaryImage && !primaryImage.toLowerCase().includes('.svg');
 
-  const displayTitle = vehicle.title || `${vehicle.make ?? ''} ${vehicle.model ?? ''}`.trim() || 'Product';
-  const subtitleParts = [vehicle.brand, vehicle.source].filter(Boolean);
+  const displayTitle = product.title || `${product.make ?? ''} ${product.model ?? ''}`.trim() || 'Product';
+  const subtitleParts = [product.brand, product.source].filter(Boolean);
   const displaySubtitle = subtitleParts.join(' • ');
 
-  const displayPrice = vehicle.price_text
-    || (typeof vehicle.price === 'number' ? `$${vehicle.price.toLocaleString()}` : undefined);
-  const ratingText = vehicle.rating
-    ? `${vehicle.rating.toFixed(1)} ★${vehicle.rating_count ? ` (${vehicle.rating_count.toLocaleString()})` : ''}`
+  const displayPrice = product.price_text
+    || (typeof product.price === 'number' ? `$${product.price.toLocaleString()}` : undefined);
+  const ratingText = product.rating
+    ? `${product.rating.toFixed(1)} ★${product.rating_count ? ` (${product.rating_count.toLocaleString()})` : ''}`
     : undefined;
 
   return (
@@ -332,12 +332,12 @@ function VehicleCard({ vehicle, onItemSelect, index, onToggleFavorite, isFavorit
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onToggleFavorite(vehicle);
+              onToggleFavorite(product);
             }}
             className="absolute top-2 left-2 w-8 h-8 bg-white border border-[#8b959e]/40 rounded-full flex items-center justify-center hover:border-[#ff1323] hover:shadow-md transition-all duration-200 z-20 shadow-sm"
           >
             <svg 
-              className={`w-5 h-5 transition-all duration-200 ${isFavorite && isFavorite(vehicle.id) ? 'text-[#ff1323] fill-[#ff1323]' : 'text-[#8b959e]'}`}
+              className={`w-5 h-5 transition-all duration-200 ${isFavorite && isFavorite(product.id) ? 'text-[#ff1323] fill-[#ff1323]' : 'text-[#8b959e]'}`}
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -374,10 +374,10 @@ function VehicleCard({ vehicle, onItemSelect, index, onToggleFavorite, isFavorit
             </div>
           )}
           
-          {vehicle.link && (
+          {product.link && (
             <div className="flex justify-between">
               <span className="text-[#8b959e]">Store:</span>
-              <span className="text-black text-right max-w-[160px] truncate">{vehicle.source || 'Online'}</span>
+              <span className="text-black text-right max-w-[160px] truncate">{product.source || 'Online'}</span>
             </div>
           )}
           
@@ -390,7 +390,7 @@ function VehicleCard({ vehicle, onItemSelect, index, onToggleFavorite, isFavorit
         </div>
 
         <button
-          onClick={() => onItemSelect && onItemSelect(vehicle)}
+          onClick={() => onItemSelect && onItemSelect(product)}
           className="w-full bg-[#750013] text-white py-2 rounded-lg text-base font-medium hover:bg-[#8b1320] transition-all duration-200 shadow-sm hover:shadow-md mt-3"
         >
           View Details

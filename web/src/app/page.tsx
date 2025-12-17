@@ -8,7 +8,7 @@ import FilterMenu from '@/components/FilterMenu';
 import FavoritesPage from '@/components/FavoritesPage';
 import ComparisonTable from '@/components/ComparisonTable';
 import CompatibilityResult from '@/components/CompatibilityResult';
-import { Product } from '@/types/vehicle';
+import { Product } from '@/types/product';
 import { ChatMessage, ChatResponse } from '@/types/chat';
 import { idssApiService } from '@/services/api';
 import { LoggingService } from '@/services/logging';
@@ -373,7 +373,7 @@ export default function Home() {
         session_id: data.session_id,
         has_compatibility_result: !!data.compatibility_result,
         has_comparison_table: !!data.comparison_table,
-        products_count: data.vehicles?.length || 0,
+        products_count: data.products?.length || 0,
         response_length: data.response?.length || 0
       });
       
@@ -436,9 +436,9 @@ export default function Home() {
       setChatMessages(prev => [...prev, assistantMessage]);
 
       // Update products - convert API format to our format
-      if (data.vehicles && data.vehicles.length > 0) {
-        const convertedProducts = data.vehicles.map((apiProduct: Record<string, unknown>) => {
-          return idssApiService.convertVehicle(apiProduct);
+      if (data.products && data.products.length > 0) {
+        const convertedProducts = data.products.map((apiProduct: Record<string, unknown>) => {
+          return idssApiService.convertProduct(apiProduct);
         });
         setProducts(convertedProducts);
         setHasReceivedRecommendations(true);
@@ -492,9 +492,9 @@ export default function Home() {
       console.log('Filters applied successfully:', data);
 
       // Update products - convert API format to our format
-      if (data.vehicles && data.vehicles.length > 0) {
-        const convertedProducts = data.vehicles.map((apiProduct: Record<string, unknown>) => {
-          return idssApiService.convertVehicle(apiProduct);
+      if (data.products && data.products.length > 0) {
+        const convertedProducts = data.products.map((apiProduct: Record<string, unknown>) => {
+          return idssApiService.convertProduct(apiProduct);
         });
         setProducts(convertedProducts);
         setHasReceivedRecommendations(true);
@@ -531,7 +531,7 @@ export default function Home() {
     
     // Log the product view event
     if (sessionId) {
-      await LoggingService.logVehicleView(sessionId, product.id);
+      await LoggingService.logProductView(sessionId, product.id);
     }
   };
 
@@ -644,7 +644,7 @@ export default function Home() {
                       {selectedItem.image_url ? (
                         <img
                           src={selectedItem.image_url}
-                          alt={`${selectedItem.year} ${selectedItem.make} ${selectedItem.model}`}
+                          alt={selectedItem.title || `${selectedItem.year} ${selectedItem.make} ${selectedItem.model}`}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -663,15 +663,17 @@ export default function Home() {
                     </div>
                     
                     {/* Details */}
-                    <div className="space-y-1">
+                    <div className="space-y-1 overflow-y-auto max-h-[calc(100%-1rem)]">
                       <div>
                         <h2 className="text-2xl font-bold text-black mb-1">
-                          {selectedItem.year} {selectedItem.make} {selectedItem.model}
-                          {selectedItem.trim && ` ${selectedItem.trim}`}
+                          {selectedItem.title || `${selectedItem.year} ${selectedItem.brand || selectedItem.make} ${selectedItem.model}`}
                         </h2>
+                        {selectedItem.brand && (
+                          <p className="text-sm text-[#8b959e]">{selectedItem.brand} {selectedItem.series && `• ${selectedItem.series}`}</p>
+                        )}
                       </div>
                       
-                      {/* Key Info Grid */}
+                      {/* Key Info Grid - Price, Rating, Year */}
                       <div className="grid grid-cols-2 gap-1">
                         {selectedItem.price && (
                           <div className="bg-white border border-[#8b959e]/30 rounded p-2 border-l-4 border-l-[#750013]">
@@ -682,118 +684,386 @@ export default function Home() {
                           </div>
                         )}
                         
-                        {selectedItem.mileage && (
+                        {selectedItem.rating && (
+                          <div className="bg-white border border-[#8b959e]/30 rounded p-2 border-l-4 border-l-[#750013]">
+                            <div className="text-[#8b959e] text-base">Rating</div>
+                            <div className="text-lg font-bold text-black">
+                              {selectedItem.rating.toFixed(1)} ★
+                              {selectedItem.rating_count && <span className="text-sm font-normal text-[#8b959e]"> ({selectedItem.rating_count.toLocaleString()})</span>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Product Type & Retailer */}
+                      <div className="grid grid-cols-2 gap-1">
+                        {(selectedItem.category || selectedItem.part_type) && (
+                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                            <div className="text-[#8b959e] text-base">Type</div>
+                            <div className="text-black text-base capitalize">{selectedItem.category || selectedItem.part_type}</div>
+                          </div>
+                        )}
+                        
+                        {selectedItem.source && (
+                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                            <div className="text-[#8b959e] text-base">Retailer</div>
+                            <div className="text-black text-base">{selectedItem.source}</div>
+                          </div>
+                        )}
+                        
+                        {selectedItem.year && (
+                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                            <div className="text-[#8b959e] text-base">Year</div>
+                            <div className="text-black text-base">{selectedItem.year}</div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* GPU-specific attributes */}
+                      {(selectedItem.category === 'gpu' || selectedItem.part_type === 'gpu' || selectedItem.vram) && (
+                        <div className="grid grid-cols-2 gap-1">
+                          {selectedItem.vram && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">VRAM</div>
+                              <div className="text-black text-base">{selectedItem.vram} GB</div>
+                            </div>
+                          )}
+                          {selectedItem.memory_type && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Memory Type</div>
+                              <div className="text-black text-base">{selectedItem.memory_type}</div>
+                            </div>
+                          )}
+                          {selectedItem.performance_tier && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Performance Tier</div>
+                              <div className="text-black text-base capitalize">{selectedItem.performance_tier}</div>
+                            </div>
+                          )}
+                          {selectedItem.target_resolution && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Target Resolution</div>
+                              <div className="text-black text-base">{selectedItem.target_resolution}</div>
+                            </div>
+                          )}
+                          {selectedItem.recommended_psu && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Recommended PSU</div>
+                              <div className="text-black text-base">{selectedItem.recommended_psu}W</div>
+                            </div>
+                          )}
+                          {selectedItem.power_connector && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Power Connector</div>
+                              <div className="text-black text-base">{selectedItem.power_connector}</div>
+                            </div>
+                          )}
+                          {selectedItem.card_length && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Card Length</div>
+                              <div className="text-black text-base">{selectedItem.card_length}</div>
+                            </div>
+                          )}
+                          {selectedItem.slot_thickness && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Slot Thickness</div>
+                              <div className="text-black text-base">{selectedItem.slot_thickness}</div>
+                            </div>
+                          )}
+                          {selectedItem.cooler_type && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Cooler Type</div>
+                              <div className="text-black text-base capitalize">{selectedItem.cooler_type}</div>
+                            </div>
+                          )}
+                          {selectedItem.ray_tracing && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Ray Tracing</div>
+                              <div className="text-black text-base">{selectedItem.ray_tracing}</div>
+                            </div>
+                          )}
+                          {selectedItem.upscaling_support && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Upscaling</div>
+                              <div className="text-black text-base">{selectedItem.upscaling_support}</div>
+                            </div>
+                          )}
+                          {selectedItem.display_outputs && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Display Outputs</div>
+                              <div className="text-black text-base">{selectedItem.display_outputs}</div>
+                            </div>
+                          )}
+                          {selectedItem.video_encoder && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Video Encoder</div>
+                              <div className="text-black text-base">{selectedItem.video_encoder}</div>
+                            </div>
+                          )}
+                          {selectedItem.interface && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Interface</div>
+                              <div className="text-black text-base">{selectedItem.interface}</div>
+                            </div>
+                          )}
+                          {selectedItem.variant && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Variant</div>
+                              <div className="text-black text-base">{selectedItem.variant}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* CPU-specific attributes */}
+                      {(selectedItem.category === 'cpu' || selectedItem.part_type === 'cpu' || selectedItem.core_count) && (
+                        <div className="grid grid-cols-2 gap-1">
+                          {selectedItem.core_count && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Cores</div>
+                              <div className="text-black text-base">{selectedItem.core_count}</div>
+                            </div>
+                          )}
+                          {selectedItem.thread_count && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Threads</div>
+                              <div className="text-black text-base">{selectedItem.thread_count}</div>
+                            </div>
+                          )}
+                          {selectedItem.socket && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Socket</div>
+                              <div className="text-black text-base">{selectedItem.socket}</div>
+                            </div>
+                          )}
+                          {selectedItem.architecture && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Architecture</div>
+                              <div className="text-black text-base">{selectedItem.architecture}</div>
+                            </div>
+                          )}
+                          {selectedItem.tdp && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">TDP</div>
+                              <div className="text-black text-base">{selectedItem.tdp}W</div>
+                            </div>
+                          )}
+                          {selectedItem.integrated_graphics && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Integrated Graphics</div>
+                              <div className="text-black text-base">{selectedItem.integrated_graphics}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Motherboard-specific attributes */}
+                      {(selectedItem.category === 'motherboard' || selectedItem.part_type === 'motherboard' || selectedItem.chipset) && (
+                        <div className="grid grid-cols-2 gap-1">
+                          {selectedItem.chipset && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Chipset</div>
+                              <div className="text-black text-base">{selectedItem.chipset}</div>
+                            </div>
+                          )}
+                          {selectedItem.socket && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Socket</div>
+                              <div className="text-black text-base">{selectedItem.socket}</div>
+                            </div>
+                          )}
+                          {selectedItem.form_factor && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Form Factor</div>
+                              <div className="text-black text-base">{selectedItem.form_factor}</div>
+                            </div>
+                          )}
+                          {selectedItem.ram_standard && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">RAM Standard</div>
+                              <div className="text-black text-base">{selectedItem.ram_standard}</div>
+                            </div>
+                          )}
+                          {selectedItem.m2_slots && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">M.2 Slots</div>
+                              <div className="text-black text-base">{selectedItem.m2_slots}</div>
+                            </div>
+                          )}
+                          {selectedItem.wifi && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">WiFi</div>
+                              <div className="text-black text-base">{selectedItem.wifi}</div>
+                            </div>
+                          )}
+                          {selectedItem.pcie_version && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">PCIe Version</div>
+                              <div className="text-black text-base">{selectedItem.pcie_version}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* PSU-specific attributes */}
+                      {(selectedItem.category === 'psu' || selectedItem.part_type === 'psu' || selectedItem.wattage) && (
+                        <div className="grid grid-cols-2 gap-1">
+                          {selectedItem.wattage && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Wattage</div>
+                              <div className="text-black text-base">{selectedItem.wattage}W</div>
+                            </div>
+                          )}
+                          {selectedItem.certification && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Certification</div>
+                              <div className="text-black text-base">{selectedItem.certification}</div>
+                            </div>
+                          )}
+                          {selectedItem.modularity && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Modularity</div>
+                              <div className="text-black text-base capitalize">{selectedItem.modularity}</div>
+                            </div>
+                          )}
+                          {selectedItem.atx_version && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">ATX Version</div>
+                              <div className="text-black text-base">{selectedItem.atx_version}</div>
+                            </div>
+                          )}
+                          {selectedItem.noise && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Noise Level</div>
+                              <div className="text-black text-base">{selectedItem.noise} dB</div>
+                            </div>
+                          )}
+                          {selectedItem.supports_pcie5_power && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">PCIe 5.0 Power</div>
+                              <div className="text-black text-base">{selectedItem.supports_pcie5_power === 'true' ? 'Yes' : 'No'}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Storage-specific attributes */}
+                      {(selectedItem.category === 'storage' || selectedItem.part_type === 'storage' || selectedItem.storage_type) && (
+                        <div className="grid grid-cols-2 gap-1">
+                          {selectedItem.capacity && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Capacity</div>
+                              <div className="text-black text-base">{selectedItem.capacity}</div>
+                            </div>
+                          )}
+                          {selectedItem.storage_type && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Storage Type</div>
+                              <div className="text-black text-base">{selectedItem.storage_type}</div>
+                            </div>
+                          )}
+                          {selectedItem.interface && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Interface</div>
+                              <div className="text-black text-base">{selectedItem.interface}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Cooling-specific attributes */}
+                      {(selectedItem.category === 'cooling' || selectedItem.part_type === 'cooling' || selectedItem.cooling_type) && (
+                        <div className="grid grid-cols-2 gap-1">
+                          {selectedItem.cooling_type && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Cooling Type</div>
+                              <div className="text-black text-base capitalize">{selectedItem.cooling_type}</div>
+                            </div>
+                          )}
+                          {selectedItem.tdp_support && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">TDP Support</div>
+                              <div className="text-black text-base">{selectedItem.tdp_support}W</div>
+                            </div>
+                          )}
+                          {selectedItem.socket && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Socket Compatibility</div>
+                              <div className="text-black text-base">{selectedItem.socket}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* RAM-specific attributes */}
+                      {(selectedItem.category === 'ram' || selectedItem.part_type === 'ram') && (
+                        <div className="grid grid-cols-2 gap-1">
+                          {selectedItem.capacity && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Capacity</div>
+                              <div className="text-black text-base">{selectedItem.capacity}</div>
+                            </div>
+                          )}
+                          {selectedItem.ram_standard && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">RAM Type</div>
+                              <div className="text-black text-base">{selectedItem.ram_standard}</div>
+                            </div>
+                          )}
+                          {selectedItem.form_factor && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Form Factor</div>
+                              <div className="text-black text-base">{selectedItem.form_factor}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Case-specific attributes */}
+                      {(selectedItem.category === 'case' || selectedItem.part_type === 'case') && (
+                        <div className="grid grid-cols-2 gap-1">
+                          {selectedItem.form_factor && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Form Factor</div>
+                              <div className="text-black text-base">{selectedItem.form_factor}</div>
+                            </div>
+                          )}
+                          {selectedItem.storage && (
+                            <div className="bg-white border border-[#8b959e]/30 rounded p-2">
+                              <div className="text-[#8b959e] text-base">Drive Bays</div>
+                              <div className="text-black text-base">{selectedItem.storage}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Legacy attributes (fallback for non-PC parts) */}
+                      {selectedItem.mileage && (
+                        <div className="grid grid-cols-2 gap-1">
                           <div className="bg-white border border-[#8b959e]/30 rounded p-2 border-l-4 border-l-[#750013]">
                             <div className="text-[#8b959e] text-base">Mileage</div>
                             <div className="text-lg font-bold text-black">
                               {typeof selectedItem.mileage === 'number' ? selectedItem.mileage.toLocaleString() : selectedItem.mileage} mi
                             </div>
                           </div>
-                        )}
-                      </div>
-                      
-                      {/* Location & Performance */}
-                      <div className="grid grid-cols-1 gap-1">
-                        {selectedItem.location && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2 border-l-4 border-l-[#750013]">
-                            <div className="flex items-center">
-                              <svg className="w-4 h-4 mr-1 text-[#750013]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              <div className="text-black text-base">
-                                {selectedItem.location === '00' ? 'Unknown' : selectedItem.location}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {selectedItem.fuel_economy && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2 border-l-4 border-l-[#750013]">
-                            <div className="flex items-center">
-                              <svg className="w-4 h-4 mr-1 text-[#750013]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                              </svg>
-                              <div className="text-black text-base">{selectedItem.fuel_economy.combined} MPG combined</div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {selectedItem.safety_rating && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2 border-l-4 border-l-[#750013]">
-                            <div className="flex items-center">
-                              <svg className="w-4 h-4 mr-1 text-[#750013]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                              </svg>
-                              <div className="text-black text-base">{selectedItem.safety_rating.overall}/5 Safety Rating</div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Product Specs Grid */}
-                      <div className="grid grid-cols-2 gap-1">
-                        {selectedItem.body_style && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
-                            <div className="text-[#8b959e] text-base">Body</div>
-                            <div className="text-black text-base">{selectedItem.body_style}</div>
-                          </div>
-                        )}
-                        
-                        {selectedItem.engine && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
-                            <div className="text-[#8b959e] text-base">Engine</div>
-                            <div className="text-black text-base">{selectedItem.engine}</div>
-                          </div>
-                        )}
-                        
-                        {selectedItem.transmission && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
-                            <div className="text-[#8b959e] text-base">Transmission</div>
-                            <div className="text-black text-base">{selectedItem.transmission}</div>
-                          </div>
-                        )}
-                        
-                        {selectedItem.doors && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
-                            <div className="text-[#8b959e] text-base">Doors</div>
-                            <div className="text-black text-base">{selectedItem.doors}</div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Colors & Seating */}
-                      <div className="grid grid-cols-2 gap-1">
-                        {selectedItem.exterior_color && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
-                            <div className="text-[#8b959e] text-base">Exterior</div>
-                            <div className="text-black text-base">{selectedItem.exterior_color}</div>
-                          </div>
-                        )}
-                        
-                        {selectedItem.interior_color && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
-                            <div className="text-[#8b959e] text-base">Interior</div>
-                            <div className="text-black text-base">{selectedItem.interior_color}</div>
-                          </div>
-                        )}
-                        
-                        {selectedItem.seating_capacity && (
-                          <div className="bg-white border border-[#8b959e]/30 rounded p-2">
-                            <div className="text-[#8b959e] text-base">Seating</div>
-                            <div className="text-black text-base">{selectedItem.seating_capacity} seats</div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Features & Description */}
-                      {selectedItem.features && selectedItem.features.length > 0 && (
-                        <div className="bg-white border border-[#8b959e]/30 rounded p-2">
-                          <div className="text-[#8b959e] text-base">Features</div>
-                          <div className="text-black text-base">{selectedItem.features.slice(0, 3).join(', ')}{selectedItem.features.length > 3 ? '...' : ''}</div>
                         </div>
                       )}
                       
+                      {selectedItem.location && (
+                        <div className="bg-white border border-[#8b959e]/30 rounded p-2 border-l-4 border-l-[#750013]">
+                          <div className="flex items-center">
+                            <svg className="w-4 h-4 mr-1 text-[#750013]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <div className="text-black text-base">
+                              {selectedItem.location === '00' ? 'Unknown' : selectedItem.location}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Description */}
                       {selectedItem.description && (
                         <div className="bg-white border border-[#8b959e]/30 rounded p-2">
                           <div className="text-[#8b959e] text-base">Description</div>
@@ -807,7 +1077,7 @@ export default function Home() {
               ) : (
                 <div className="h-full overflow-y-auto">
                   <RecommendationCarousel 
-                    vehicles={products} 
+                    products={products} 
                     onItemSelect={handleItemSelectSync}
                     showPlaceholders={false}
                     onToggleFavorite={toggleFavorite}

@@ -48,6 +48,56 @@ export interface Product {
   product?: Record<string, unknown>;
   offer?: Record<string, unknown>;
   raw?: Record<string, unknown>;
+  
+  // PC Part attributes (from raw data)
+  series?: string;
+  category?: string;
+  part_type?: string;
+  // GPU attributes
+  vram?: string;
+  memory_type?: string;
+  cooler_type?: string;
+  variant?: string;
+  is_oc?: string;
+  interface?: string;
+  power_connector?: string;
+  performance_tier?: string;
+  recommended_psu?: string;
+  target_resolution?: string;
+  ray_tracing?: string;
+  upscaling_support?: string;
+  card_length?: string;
+  slot_thickness?: string;
+  video_encoder?: string;
+  display_outputs?: string;
+  // CPU attributes
+  socket?: string;
+  architecture?: string;
+  pcie_version?: string;
+  ram_standard?: string;
+  tdp?: string;
+  core_count?: string | number;
+  thread_count?: string | number;
+  integrated_graphics?: string;
+  // Motherboard attributes
+  chipset?: string;
+  form_factor?: string;
+  m2_slots?: string | number;
+  wifi?: string;
+  // PSU attributes
+  wattage?: string;
+  certification?: string;
+  modularity?: string;
+  atx_version?: string;
+  noise?: string;
+  supports_pcie5_power?: string;
+  // Storage attributes
+  storage?: string;
+  capacity?: string;
+  storage_type?: string;
+  // Cooling attributes
+  cooling_type?: string;
+  tdp_support?: string;
 }
 
 export interface ProductFilters {

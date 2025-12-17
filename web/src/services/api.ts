@@ -1,5 +1,5 @@
 import { ChatRequest, ChatResponse } from '@/types/chat';
-import { Product } from '@/types/vehicle';
+import { Product } from '@/types/product';
 
 // Use Next.js API routes as proxy (they handle backend routing)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -120,7 +120,7 @@ class IDSSApiService {
 
       const url = API_BASE_URL ? `${API_BASE_URL}/session/${sessionId}/favorite` : `/api/session/${sessionId}/favorite`;
       console.log('Sending to:', url);
-      console.log('Request body:', { vehicle: productData, is_favorited: isFavorited });
+      console.log('Request body:', { product: productData, is_favorited: isFavorited });
 
       const response = await fetch(url, {
         method: 'POST',
@@ -128,7 +128,7 @@ class IDSSApiService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          vehicle: productData,  // API still expects 'vehicle' field name for backward compatibility
+          product: productData,  // Send as 'product' field
           is_favorited: isFavorited,
         }),
       });
@@ -150,7 +150,7 @@ class IDSSApiService {
   async applyFilters(sessionId: string, filters: Record<string, unknown>, clearKeys?: string[]): Promise<{
     session_id: string;
     filters: Record<string, unknown>;
-    vehicles: Record<string, unknown>[];
+    products: Record<string, unknown>[];
     total: number;
   }> {
     try {
@@ -192,7 +192,7 @@ class IDSSApiService {
   async clearFilters(sessionId: string, clearKeys: string[]): Promise<{
     session_id: string;
     filters: Record<string, unknown>;
-    vehicles: Record<string, unknown>[];
+    products: Record<string, unknown>[];
     total: number;
   }> {
     try {
@@ -226,19 +226,24 @@ class IDSSApiService {
   }
 
   // Convert API product data to our Product type
-  convertVehicle(apiVehicle: Record<string, unknown>): Product {
-    const vehicle = (apiVehicle.vehicle as Record<string, unknown>) || apiVehicle;
-    const retailListing = (apiVehicle.retailListing as Record<string, unknown>) || {};
-    const product = (apiVehicle.product as Record<string, unknown>) || {};
-    const offer = (apiVehicle.offer as Record<string, unknown>) || {};
-    const photos = (apiVehicle.photos as Record<string, unknown>) || {};
+  convertProduct(apiProduct: Record<string, unknown>): Product {
+    const rawProduct = (apiProduct.product as Record<string, unknown>) || apiProduct;
+    const retailListing = (apiProduct.retailListing as Record<string, unknown>) || {};
+    const productMeta = (apiProduct.product as Record<string, unknown>) || {};
+    const offer = (apiProduct.offer as Record<string, unknown>) || {};
+    const photos = (apiProduct.photos as Record<string, unknown>) || {};
+    // Extract attributes from nested objects (for PC parts data)
+    const attrs = (apiProduct.attributes as Record<string, unknown>) 
+      || (apiProduct.specs as Record<string, unknown>) 
+      || (productMeta.attributes as Record<string, unknown>)
+      || {};
 
-    const title = (apiVehicle.title as string) || (product.title as string) || `${vehicle.make || ''} ${vehicle.model || ''}`.trim();
-    const brand = (apiVehicle.brand as string) || (product.brand as string);
-    const source = (apiVehicle.source as string) || (offer.seller as string) || (product.source as string);
+    const title = (apiProduct.title as string) || (productMeta.title as string) || `${rawProduct.make || ''} ${rawProduct.model || ''}`.trim();
+    const brand = (apiProduct.brand as string) || (productMeta.brand as string);
+    const source = (apiProduct.source as string) || (offer.seller as string) || (productMeta.source as string);
 
-    const priceText = (apiVehicle.price_text as string) || (offer.price as string) || (apiVehicle.price as string);
-    let priceValue = (apiVehicle.price_value as number) || (apiVehicle.price as number) || undefined;
+    const priceText = (apiProduct.price_text as string) || (offer.price as string) || (apiProduct.price as string);
+    let priceValue = (apiProduct.price_value as number) || (apiProduct.price as number) || undefined;
 
     if (!priceValue && typeof priceText === 'string') {
       const numericMatch = priceText.match(/[0-9]+(?:[.,][0-9]+)?/);
@@ -254,57 +259,57 @@ class IDSSApiService {
       if (retailListing.state) {
         return retailListing.state as string;
       }
-      if (vehicle.location) {
-        return vehicle.location as string;
+      if (rawProduct.location) {
+        return rawProduct.location as string;
       }
-      if (apiVehicle.location) {
-        return apiVehicle.location as string;
+      if (apiProduct.location) {
+        return apiProduct.location as string;
       }
       return undefined;
     })();
 
-    const vin = (vehicle.vin as string) || (apiVehicle.vin as string);
+    const vin = (rawProduct.vin as string) || (apiProduct.vin as string);
 
-    const imageUrl = (apiVehicle.image_url as string)
-      || (apiVehicle.imageUrl as string)
-      || (vehicle.image_url as string)
+    const imageUrl = (apiProduct.image_url as string)
+      || (apiProduct.imageUrl as string)
+      || (rawProduct.image_url as string)
       || ((photos.retail as Array<Record<string, unknown>>)?.[0]?.url as string)
       || (retailListing.primaryImage as string);
 
     return {
-      id: (vehicle.id as string) || (apiVehicle.id as string) || (product.identifier as string) || (product.id as string) || Math.random().toString(36).substr(2, 9),
+      id: (rawProduct.id as string) || (apiProduct.id as string) || (productMeta.identifier as string) || (productMeta.id as string) || Math.random().toString(36).substr(2, 9),
       title: title || 'Product',
-      make: (vehicle.make as string) || brand || source || 'Unknown',
-      model: (vehicle.model as string) || title || 'Unknown',
-      year: (vehicle.year as number) || (apiVehicle.year as number) || new Date().getFullYear(),
+      make: (rawProduct.make as string) || brand || source || 'Unknown',
+      model: (rawProduct.model as string) || title || 'Unknown',
+      year: (rawProduct.year as number) || (apiProduct.year as number) || new Date().getFullYear(),
       price: typeof priceValue === 'number' && !Number.isNaN(priceValue) ? priceValue : undefined,
       price_text: priceText,
       price_value: priceValue,
-      mileage: (vehicle.mileage as number) || (apiVehicle.mileage as number) || (retailListing.miles as number),
+      mileage: (rawProduct.mileage as number) || (apiProduct.mileage as number) || (retailListing.miles as number),
       location,
       vin,
       image_url: imageUrl,
-      trim: (vehicle.trim as string) || (apiVehicle.trim as string),
-      body_style: (vehicle.bodyStyle as string) || (vehicle.body_style as string) || (apiVehicle.body_style as string),
-      engine: (vehicle.engine as string) || (apiVehicle.engine as string),
-      transmission: (vehicle.transmission as string) || (apiVehicle.transmission as string),
-      exterior_color: (vehicle.exteriorColor as string) || (vehicle.exterior_color as string) || (apiVehicle.exterior_color as string),
-      interior_color: (vehicle.interiorColor as string) || (vehicle.interior_color as string) || (apiVehicle.interior_color as string),
-      doors: (vehicle.doors as number) || (apiVehicle.doors as number),
-      seating_capacity: (vehicle.seating_capacity as number) || (apiVehicle.seating_capacity as number),
-      features: (vehicle.features as string[]) || (apiVehicle.features as string[]) || [],
-      fuel_economy: vehicle.fuel_economy ? {
-        city: (vehicle.fuel_economy as Record<string, unknown>).city as number || 0,
-        highway: (vehicle.fuel_economy as Record<string, unknown>).highway as number || 0,
-        combined: (vehicle.fuel_economy as Record<string, unknown>).combined as number || 0,
+      trim: (rawProduct.trim as string) || (apiProduct.trim as string),
+      body_style: (rawProduct.bodyStyle as string) || (rawProduct.body_style as string) || (apiProduct.body_style as string),
+      engine: (rawProduct.engine as string) || (apiProduct.engine as string),
+      transmission: (rawProduct.transmission as string) || (apiProduct.transmission as string),
+      exterior_color: (rawProduct.exteriorColor as string) || (rawProduct.exterior_color as string) || (apiProduct.exterior_color as string),
+      interior_color: (rawProduct.interiorColor as string) || (rawProduct.interior_color as string) || (apiProduct.interior_color as string),
+      doors: (rawProduct.doors as number) || (apiProduct.doors as number),
+      seating_capacity: (rawProduct.seating_capacity as number) || (apiProduct.seating_capacity as number),
+      features: (rawProduct.features as string[]) || (apiProduct.features as string[]) || [],
+      fuel_economy: rawProduct.fuel_economy ? {
+        city: (rawProduct.fuel_economy as Record<string, unknown>).city as number || 0,
+        highway: (rawProduct.fuel_economy as Record<string, unknown>).highway as number || 0,
+        combined: (rawProduct.fuel_economy as Record<string, unknown>).combined as number || 0,
       } : undefined,
-      safety_rating: vehicle.safety_rating ? {
-        overall: (vehicle.safety_rating as Record<string, unknown>).overall as number || 0,
-        frontal: (vehicle.safety_rating as Record<string, unknown>).frontal as number || 0,
-        side: (vehicle.safety_rating as Record<string, unknown>).side as number || 0,
-        rollover: (vehicle.safety_rating as Record<string, unknown>).rollover as number || 0,
+      safety_rating: rawProduct.safety_rating ? {
+        overall: (rawProduct.safety_rating as Record<string, unknown>).overall as number || 0,
+        frontal: (rawProduct.safety_rating as Record<string, unknown>).frontal as number || 0,
+        side: (rawProduct.safety_rating as Record<string, unknown>).side as number || 0,
+        rollover: (rawProduct.safety_rating as Record<string, unknown>).rollover as number || 0,
       } : undefined,
-      description: (vehicle.description as string) || (apiVehicle.description as string) || (product.description as string),
+      description: (rawProduct.description as string) || (apiProduct.description as string) || (productMeta.description as string),
       dealer_info: retailListing.dealer ? {
         name: ((retailListing.dealer as Record<string, unknown>).name as string) || 'Unknown Dealer',
         phone: (retailListing.dealer as Record<string, unknown>).phone as string,
@@ -313,13 +318,63 @@ class IDSSApiService {
       carfax_url: (retailListing.carfaxUrl as string) || undefined,
       brand,
       source,
-      link: (apiVehicle.link as string) || (offer.url as string) || (product.link as string),
-      rating: (apiVehicle.rating as number) || (product.rating as number),
-      rating_count: (apiVehicle.rating_count as number) || (apiVehicle.reviewCount as number) || (product.rating_count as number) || (product.reviewCount as number),
-      price_currency: (apiVehicle.price_currency as string) || (offer.currency as string),
-      product: Object.keys(product).length > 0 ? product : undefined,
+      link: (apiProduct.link as string) || (offer.url as string) || (productMeta.link as string),
+      rating: (apiProduct.rating as number) || (productMeta.rating as number),
+      rating_count: (apiProduct.rating_count as number) || (apiProduct.reviewCount as number) || (productMeta.rating_count as number) || (productMeta.reviewCount as number),
+      price_currency: (apiProduct.price_currency as string) || (offer.currency as string),
+      product: Object.keys(productMeta).length > 0 ? productMeta : undefined,
       offer: Object.keys(offer).length > 0 ? offer : undefined,
-      raw: apiVehicle,
+      raw: apiProduct,
+      
+      // PC Part attributes - extract from raw data or attributes
+      series: (apiProduct.series as string) || (attrs.series as string),
+      category: (apiProduct.category as string) || (apiProduct.type as string) || (apiProduct.part_type as string) || (attrs.category as string),
+      part_type: (apiProduct.part_type as string) || (apiProduct.type as string) || (apiProduct.category as string),
+      // GPU attributes
+      vram: (apiProduct.vram as string) || (attrs.vram as string),
+      memory_type: (apiProduct.memory_type as string) || (attrs.memory_type as string),
+      cooler_type: (apiProduct.cooler_type as string) || (attrs.cooler_type as string),
+      variant: (apiProduct.variant as string) || (attrs.variant as string),
+      is_oc: (apiProduct.is_oc as string) || (attrs.is_oc as string),
+      interface: (apiProduct.interface as string) || (attrs.interface as string),
+      power_connector: (apiProduct.power_connector as string) || (attrs.power_connector as string),
+      performance_tier: (apiProduct.performance_tier as string) || (attrs.performance_tier as string),
+      recommended_psu: (apiProduct.recommended_psu as string) || (attrs.recommended_psu as string),
+      target_resolution: (apiProduct.target_resolution as string) || (attrs.target_resolution as string),
+      ray_tracing: (apiProduct.ray_tracing as string) || (attrs.ray_tracing as string),
+      upscaling_support: (apiProduct.upscaling_support as string) || (attrs.upscaling_support as string),
+      card_length: (apiProduct.card_length as string) || (attrs.card_length as string),
+      slot_thickness: (apiProduct.slot_thickness as string) || (attrs.slot_thickness as string),
+      video_encoder: (apiProduct.video_encoder as string) || (attrs.video_encoder as string),
+      display_outputs: (apiProduct.display_outputs as string) || (attrs.display_outputs as string),
+      // CPU attributes
+      socket: (apiProduct.socket as string) || (attrs.socket as string),
+      architecture: (apiProduct.architecture as string) || (attrs.architecture as string),
+      pcie_version: (apiProduct.pcie_version as string) || (attrs.pcie_version as string),
+      ram_standard: (apiProduct.ram_standard as string) || (attrs.ram_standard as string),
+      tdp: (apiProduct.tdp as string) || (attrs.tdp as string),
+      core_count: (apiProduct.core_count as string | number) || (attrs.core_count as string | number),
+      thread_count: (apiProduct.thread_count as string | number) || (attrs.thread_count as string | number),
+      integrated_graphics: (apiProduct.integrated_graphics as string) || (attrs.integrated_graphics as string),
+      // Motherboard attributes
+      chipset: (apiProduct.chipset as string) || (attrs.chipset as string),
+      form_factor: (apiProduct.form_factor as string) || (attrs.form_factor as string),
+      m2_slots: (apiProduct.m2_slots as string | number) || (attrs.m2_slots as string | number),
+      wifi: (apiProduct.wifi as string) || (attrs.wifi as string),
+      // PSU attributes
+      wattage: (apiProduct.wattage as string) || (attrs.wattage as string),
+      certification: (apiProduct.certification as string) || (attrs.certification as string),
+      modularity: (apiProduct.modularity as string) || (attrs.modularity as string),
+      atx_version: (apiProduct.atx_version as string) || (attrs.atx_version as string),
+      noise: (apiProduct.noise as string) || (attrs.noise as string),
+      supports_pcie5_power: (apiProduct.supports_pcie5_power as string) || (attrs.supports_pcie5_power as string),
+      // Storage attributes
+      storage: (apiProduct.storage as string) || (attrs.storage as string),
+      capacity: (apiProduct.capacity as string) || (attrs.capacity as string),
+      storage_type: (apiProduct.storage_type as string) || (attrs.storage_type as string),
+      // Cooling attributes
+      cooling_type: (apiProduct.cooling_type as string) || (attrs.cooling_type as string),
+      tdp_support: (apiProduct.tdp_support as string) || (attrs.tdp_support as string),
     };
   }
 }
