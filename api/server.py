@@ -555,13 +555,14 @@ async def apply_filters(
     Apply filters directly to session state without sending a chat message.
 
     This endpoint:
-    1. Updates the session's explicit_filters state directly
-    2. Triggers a product search with the new filters
-    3. Returns the updated product list
+    1. Optionally clears specific filter keys (if clear_keys provided)
+    2. Merges new filters into the session's explicit_filters state
+    3. Triggers a product search with the updated filters
+    4. Returns the updated product list
 
     Args:
         session_id: Session ID
-        request: FiltersRequest with filter key-value pairs
+        request: FiltersRequest with filter key-value pairs and optional clear_keys
 
     Returns:
         FiltersResponse with updated filters and products
@@ -574,25 +575,26 @@ async def apply_filters(
         sessions[session_id] = create_initial_state()
 
     state = sessions[session_id]
+    current_filters = dict(state.get("explicit_filters", {}))
 
-    # Update filters directly in session state
+    # First, clear specific keys if requested
+    if request.clear_keys:
+        for key in request.clear_keys:
+            current_filters.pop(key, None)
+        logger.info(f"Session {session_id}: Cleared filter keys: {request.clear_keys}")
+
+    # Then, merge new filters (this allows both clearing and setting in one request)
     new_filters = request.filters
-    
-    # Merge new filters with existing ones (or replace entirely if empty)
     if new_filters:
-        # Update explicit filters
-        current_filters = state.get("explicit_filters", {})
-        
-        # Clear existing filters if part_type changed or if clearing
-        if not new_filters or new_filters.get("part_type") != current_filters.get("part_type"):
-            state["explicit_filters"] = dict(new_filters)
-        else:
-            # Merge filters
-            state["explicit_filters"].update(new_filters)
-    else:
-        # Clear all filters if empty object passed
-        state["explicit_filters"] = {}
+        # Merge new filters into current
+        for key, value in new_filters.items():
+            if value is None or value == "" or value == []:
+                # Remove key if value is None/empty
+                current_filters.pop(key, None)
+            else:
+                current_filters[key] = value
 
+    state["explicit_filters"] = current_filters
     logger.info(f"Session {session_id}: Applied filters directly: {state['explicit_filters']}")
 
     # Trigger product search with new filters
@@ -608,45 +610,6 @@ async def apply_filters(
     return FiltersResponse(
         session_id=session_id,
         filters=state.get("explicit_filters", {}),
-        vehicles=recommended_products[:20] if recommended_products else [],
-        total=len(recommended_products)
-    )
-
-
-@app.delete("/session/{session_id}/filters", response_model=FiltersResponse)
-async def clear_filters(session_id: str):
-    """
-    Clear all filters from session state.
-
-    Args:
-        session_id: Session ID
-
-    Returns:
-        FiltersResponse with empty filters and default products
-    """
-    from idss_agent.processing.recommendation import update_recommendation_list
-
-    if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    state = sessions[session_id]
-
-    # Clear all explicit filters
-    state["explicit_filters"] = {}
-    logger.info(f"Session {session_id}: Cleared all filters")
-
-    # Trigger product search with cleared filters
-    try:
-        state = update_recommendation_list(state)
-        sessions[session_id] = state
-    except Exception as e:
-        logger.error(f"Error updating recommendations after clearing filters: {e}")
-
-    recommended_products = state.get('recommended_products', [])
-
-    return FiltersResponse(
-        session_id=session_id,
-        filters={},
         vehicles=recommended_products[:20] if recommended_products else [],
         total=len(recommended_products)
     )

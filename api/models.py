@@ -91,6 +91,7 @@ class FavoriteRequest(BaseModel):
 class FiltersRequest(BaseModel):
     """Request model for applying filters directly to session state."""
     filters: Dict[str, Any] = Field(description="Filter key-value pairs to apply")
+    clear_keys: Optional[List[str]] = Field(default=None, description="Optional list of filter keys to clear (remove from state)")
 
 
 class FiltersResponse(BaseModel):

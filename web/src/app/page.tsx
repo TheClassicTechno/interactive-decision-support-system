@@ -461,7 +461,7 @@ export default function Home() {
     }
   };
 
-  const handleFilterChange = async (filters: Record<string, unknown>) => {
+  const handleFilterChange = async (filters: Record<string, unknown>, clearKeys?: string[]) => {
     setCurrentFilters(filters);
     setIsLoading(true);
 
@@ -486,8 +486,8 @@ export default function Home() {
         throw new Error('Could not establish session');
       }
 
-      // Apply filters directly via the filters API
-      const data = await idssApiService.applyFilters(currentSessionId, filters);
+      // Apply filters directly via the filters API (with optional clear_keys)
+      const data = await idssApiService.applyFilters(currentSessionId, filters, clearKeys);
       
       console.log('Filters applied successfully:', data);
 

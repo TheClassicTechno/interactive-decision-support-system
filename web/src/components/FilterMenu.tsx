@@ -3,9 +3,27 @@
 import { useState, useEffect, useCallback } from 'react';
 
 interface FilterMenuProps {
-  onFilterChange: (filters: Record<string, unknown>) => void;
+  onFilterChange: (filters: Record<string, unknown>, clearKeys?: string[]) => void;
   onOpenChange?: (isOpen: boolean) => void;
 }
+
+// All filter keys that are controlled by the UI (not from conversation)
+export const UI_FILTER_KEYS = [
+  'part_type',
+  // GPU filters
+  'gpu_brand', 'gpu_series', 'vram', 'gpu_tdp', 'power_connector', 'recommended_psu',
+  'target_resolution', 'ray_tracing', 'upscaling_support', 'gpu_performance_tier',
+  'card_length', 'slot_thickness', 'video_encoder', 'display_outputs',
+  // CPU filters
+  'cpu_brand', 'socket', 'chipset', 'ram_standard', 'core_count', 'thread_count',
+  'boost_clock', 'cache', 'cpu_performance_tier', 'primary_use_case', 'tdp',
+  'cooling_requirement', 'integrated_graphics', 'overclocking_support', 'cpu_generation',
+  // Motherboard filters
+  'supported_cpu_gen', 'bios_flashback', 'form_factor', 'dimm_slots', 'max_ram_speed',
+  'pcie_version', 'm2_slots', 'sata_ports', 'usb_c_support', 'lan_speed', 'wifi', 'vrm_tier',
+  // Common filters
+  'price', 'price_min', 'price_max', 'condition',
+];
 
 // GPU Filters
 const GPU_BRANDS = ['NVIDIA', 'AMD', 'Intel'];
@@ -295,7 +313,8 @@ export default function FilterMenu({ onFilterChange, onOpenChange }: FilterMenuP
     setFilters(initialFilterState);
     setLastAppliedFilters(initialFilterState);
     setExpandedSections({});
-    onFilterChange({});
+    // Pass empty filters but with clear_keys to only remove UI-controlled filters
+    onFilterChange({}, UI_FILTER_KEYS);
   };
 
   const clearPartTypeFilters = () => {

@@ -147,7 +147,7 @@ class IDSSApiService {
     }
   }
 
-  async applyFilters(sessionId: string, filters: Record<string, unknown>): Promise<{
+  async applyFilters(sessionId: string, filters: Record<string, unknown>, clearKeys?: string[]): Promise<{
     session_id: string;
     filters: Record<string, unknown>;
     vehicles: Record<string, unknown>[];
@@ -161,13 +161,19 @@ class IDSSApiService {
       const url = API_BASE_URL ? `${API_BASE_URL}/session/${sessionId}/filters` : `/api/session/${sessionId}/filters`;
       console.log('Applying filters to:', url);
       console.log('Filters:', filters);
+      if (clearKeys) console.log('Clearing keys:', clearKeys);
+
+      const body: { filters: Record<string, unknown>; clear_keys?: string[] } = { filters };
+      if (clearKeys && clearKeys.length > 0) {
+        body.clear_keys = clearKeys;
+      }
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ filters }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -183,7 +189,7 @@ class IDSSApiService {
     }
   }
 
-  async clearFilters(sessionId: string): Promise<{
+  async clearFilters(sessionId: string, clearKeys: string[]): Promise<{
     session_id: string;
     filters: Record<string, unknown>;
     vehicles: Record<string, unknown>[];
@@ -195,13 +201,15 @@ class IDSSApiService {
       }
 
       const url = API_BASE_URL ? `${API_BASE_URL}/session/${sessionId}/filters` : `/api/session/${sessionId}/filters`;
-      console.log('Clearing filters:', url);
+      console.log('Clearing filter keys:', clearKeys);
 
+      // Use POST with clear_keys to only remove specific UI filter keys
       const response = await fetch(url, {
-        method: 'DELETE',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ filters: {}, clear_keys: clearKeys }),
       });
 
       if (!response.ok) {
