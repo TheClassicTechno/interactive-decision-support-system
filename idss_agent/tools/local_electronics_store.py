@@ -106,6 +106,16 @@ class LocalElectronicsStore:
                 f"No valid pc_parts table found in {self.db_path}. "
                 f"Expected 'pc_parts' or 'pc_parts_augmented', found: {tables}"
             )
+# juli change 
+# check if the table has a column 
+    def has_a_column(self, col_name: str) -> bool:
+      
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(f"PRAGMA table_info({self._table_name})")
+        columns = [row[1] for row in cursor.fetchall()]
+        conn.close()
+        return col_name in columns
     
     def search_products(
         self,
@@ -232,22 +242,39 @@ class LocalElectronicsStore:
     ) -> Tuple[str, Tuple[Any, ...]]:
         """Construct SQL query and parameter tuple from filters."""
         # Use schema from pc_parts_schema.sql - table name detected dynamically
-        select_clause = f"""
-            SELECT id, product_id, slug, product_type, series, model, brand,
-                   size, color, year, price, seller, rating, rating_count,
-                   socket, architecture, pcie_version, ram_standard, tdp,
-                   vram, memory_type, cooler_type, variant, is_oc, revision,
-                   interface, power_connector, chipset, form_factor,
-                   wattage, certification, modularity, atx_version, noise,
-                   supports_pcie5_power, storage, capacity, storage_type,
-                   cooling_type, tdp_support, created_at, updated_at, raw_name,
-                   imageurl, performance_tier,
-                   recommended_psu, target_resolution, ray_tracing,
-                   upscaling_support, card_length, slot_thickness,
-                   video_encoder, display_outputs,
-                   core_count, thread_count, integrated_graphics, m2_slots, wifi
-            FROM {self._table_name}
-        """
+        
+        # juli change 
+        # first checks if each column actually exists in the current database table using 
+        # self.has_a_column. Only columns that exist are included in the SELECT clause
+        # Only include performance_tier if the column exists for example
+
+        # this makes queries for product options 
+        # succeed even if the database is incomplete or missing some fields
+        base_cols = [
+            "id", "product_id", "slug", "product_type", "series", "model", "brand",
+            "size", "color", "year", "price", "seller", "rating", "rating_count",
+            "socket", "architecture", "pcie_version", "ram_standard", "tdp",
+            "vram", "memory_type", "cooler_type", "variant", "is_oc", "revision",
+            "interface", "power_connector", "chipset", "form_factor",
+            "wattage", "certification", "modularity", "atx_version", "noise",
+            "supports_pcie5_power", "storage", "capacity", "storage_type",
+            "cooling_type", "tdp_support", "created_at", "updated_at", "raw_name",
+            "imageurl"
+        ]
+        # add these columns if exists
+        optional_cols = [
+            "performance_tier", "recommended_psu", "target_resolution", "ray_tracing",
+            "upscaling_support", "card_length", "slot_thickness",
+            "video_encoder", "display_outputs",
+            "core_count", "thread_count", "integrated_graphics", "m2_slots", "wifi"
+        ]
+        select = base_cols.copy()
+        for c in optional_cols:
+            if self.has_a_column(c): # prevent SQL errors due to missing columns
+                select.append(c)
+
+        # makes sure only the columns that exist in the database are included in the query
+        select_clause = f"SELECT {', '.join(select)} FROM {self._table_name}"
         conditions: List[str] = []
         params: List[Any] = []
         
